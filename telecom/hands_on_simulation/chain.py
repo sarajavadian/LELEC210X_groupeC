@@ -23,7 +23,8 @@ class Chain:
     payload_len = 50  # Number of bits per packet
 
     ## Simulation parameters
-    n_packets = 200 # Number of sent packets
+
+    n_packets = 200  # Number of sent packets
 
     ## Channel parameters
     sto_val = 0
@@ -85,6 +86,7 @@ class Chain:
             or None if not found.
         """
         raise NotImplementedError
+
 
     bypass_cfo_estimation = True 
 
@@ -198,8 +200,6 @@ class BasicChain(Chain):
         R = self.osr_rx # oversampling factor
         r0 = np.zeros(len(y)//R,dtype=np.complex64)
         r1 = np.zeros(len(y)//R,dtype=np.complex64)
-        #print(len(y))
-        #print(R)
 
         for i in range(len(y)//R):
             for j in range(R):
