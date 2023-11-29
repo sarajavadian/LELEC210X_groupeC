@@ -76,4 +76,4 @@ if __name__ == "__main__":
             plot_specgram(melvec.reshape((N_MELVECS, MELVEC_LENGTH)).T, ax=plt.gca(), is_mel=True, title="MEL Spectrogram #{}".format(msg_counter), xlabel="Mel vector")
             plt.draw()
             plt.pause(0.001)
-            plt.clf()
+            plt.show()

@@ -243,7 +243,7 @@ blocks:
     bus_structure: null
     coordinate: [615, 192]
     rotation: 0
-    state: enabled
+    state: bypassed
 - name: fsk_synchronization_0
   id: fsk_synchronization
   parameters:
@@ -275,6 +275,7 @@ blocks:
     analog_bandw_ch1: 1.5e6
     calibr_bandw_ch0: ''
     calibr_bandw_ch1: 2.5e6
+    ch_align: 'False'
     channel_mode: '0'
     comment: ''
     dacVal: '180'
@@ -323,7 +324,7 @@ blocks:
     bus_structure: null
     coordinate: [269, 177]
     rotation: 0
-    state: enabled
+    state: bypassed
 - name: qtgui_sink_x_0
   id: qtgui_sink_x
   parameters:
