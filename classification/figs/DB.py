@@ -18,6 +18,7 @@ n = 220544  # number of samples
 "Compute the melspecgrams"
 sig = 1e-2
 noise = sig * np.random.randn(n)
+>>>>>>> Revert "enlever le chain de argu"
 audio = noise, fs_down
 spec_noise = AudioUtil.specgram(audio)
 melspec_noise = AudioUtil.melspectrogram(audio)

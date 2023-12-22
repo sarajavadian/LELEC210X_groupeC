@@ -1,7 +1,3 @@
-> **IMPORTANT:** this README (and repository) is currently "work in progress",
-> so some information might not be up to date, or some files might still need
-> to be pushed to this repository.
-
 # LELEC210x project
 
 This repository contains every thing you (student) need for the LELEC210x project.
@@ -13,15 +9,28 @@ The current directory, which we will refer to as **root**, contains instructions
 3. how to keep your code clean;
 4. and how to build the whole project.
 
+<<<<<<< refs/remotes/upstream/main
+> Note: part 3 will only be useful once you have read and worked through all
+=======
 > **NOTE**: part 3 will only be useful once you have read and worked through all
+>>>>>>> Revert "enlever le chain de argu"
 > the intermediate hands-on sessions.
 
 Subdirectories are organized as follows:
 
+<<<<<<< refs/remotes/upstream/main
+- [`auth/`](auth/):
+  hands-on related to the authentification part.
+- [`common/`](common/):
+  shared tools across different parts.
+- [`classification/`](classification/):
+  hands-on related to the classification part.
+=======
 - [`classification/`](classification/):
   hands-on related to the classification part.
 - [`contest/`](contest/):
   poster of the teaching team and code used during the contest.
+>>>>>>> Revert "enlever le chain de argu"
 - [`fpga`](fpga/):
   hands-on related to the FPGA part and Quartus project for the LimeSDR Mini.
 - [`leaderboard/`](leaderboard/):
@@ -29,10 +38,13 @@ Subdirectories are organized as follows:
   setup before the contest.
 - [`mcu/`](mcu/):
   hands-on related to the MCU part and STM32CubeIDE project for the Nucleo board.
+<<<<<<< refs/remotes/upstream/main
+=======
 - [`scripts/`](scripts/): general purpose routines.
+>>>>>>> Revert "enlever le chain de argu"
 - [`telecom/`](telecom/): hands-on related to the telecom part,
   simulation framework and GNU Radio modules.
-- [`tex/`](tex/): LaTeX projects for this courses.
+- [`tex/`](tex/): LaTeX projects for this course.
   PDFs are provided on [Moodle](https://moodle.uclouvain.be/course/view.php?id=4829),
   but you can build them from source, see [`tex/README.md`](tex/README.md).
 
@@ -166,4 +178,4 @@ to format staged files, before committing them.
 
 ## 4. Building the whole project
 
-TODO
+See [INTEGRATION](INTEGRATION.md).
