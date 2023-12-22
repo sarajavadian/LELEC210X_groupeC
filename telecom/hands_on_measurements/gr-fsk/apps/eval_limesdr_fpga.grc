@@ -32,42 +32,6 @@ options:
     state: enabled
 
 blocks:
-<<<<<<< refs/remotes/upstream/main
-- name: K_threshold
-  id: variable_qtgui_range
-  parameters:
-    comment: ''
-    gui_hint: ''
-    label: K factor for threshold
-    min_len: '200'
-    orient: Qt.Horizontal
-    rangeType: int
-    start: '1'
-    step: '1'
-    stop: '254'
-    value: '7'
-    widget: counter_slider
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1111, 19]
-    rotation: 0
-    state: enabled
-- name: K_threshold
-  id: variable
-  parameters:
-    comment: ''
-    value: '7'
-  states:
-    bus_sink: false
-    bus_source: false
-    bus_structure: null
-    coordinate: [1313, 22]
-    rotation: 0
-    state: disabled
-=======
->>>>>>> Revert "enlever le chain de argu"
 - name: carrier_freq
   id: variable
   parameters:
@@ -116,8 +80,6 @@ blocks:
     coordinate: [797, 22]
     rotation: 0
     state: true
-<<<<<<< refs/remotes/upstream/main
-=======
 - name: detect_threshold_fpga
   id: variable_qtgui_range
   parameters:
@@ -151,7 +113,6 @@ blocks:
     coordinate: [1313, 22]
     rotation: 0
     state: disabled
->>>>>>> Revert "enlever le chain de argu"
 - name: estimated_noise_power
   id: variable
   parameters:
@@ -372,15 +333,9 @@ blocks:
     dacVal: '180'
     digital_bandw_ch0: samp_rate
     digital_bandw_ch1: samp_rate
-<<<<<<< refs/remotes/upstream/main
-    dspcfg_PASSTHROUGH_LEN: (packet_len+1)*8*int(samp_rate/data_rate)+int(samp_rate/data_rate)
-      + 1000
-    dspcfg_THRESHOLD: K_threshold
-=======
     dspcfg_FILTER_LEN: '32'
     dspcfg_PASSTHROUGH_LEN: (packet_len+1)*8*int(samp_rate/data_rate)+int(samp_rate/data_rate)
     dspcfg_THRESHOLD: detect_threshold_fpga
->>>>>>> Revert "enlever le chain de argu"
     dspcfg_preamble_en: '1'
     filename: ''
     gain_dB_ch0: rx_gain
@@ -399,11 +354,7 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-<<<<<<< refs/remotes/upstream/main
-    coordinate: [32, 204.0]
-=======
     coordinate: [28, 201]
->>>>>>> Revert "enlever le chain de argu"
     rotation: 0
     state: true
 - name: qtgui_sink_x_0
