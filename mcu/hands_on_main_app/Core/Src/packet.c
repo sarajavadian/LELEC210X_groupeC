@@ -2,6 +2,7 @@
  * packet.c
  */
 
+#include <string.h>
 #include "aes_ref.h"
 #include "config.h"
 #include "packet.h"
@@ -24,6 +25,19 @@ void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
 
 
     // TO DO : Complete the CBC-MAC_AES
+
+	for (i = 0; i < msg_len-16; i +=16){
+		for(size_t j = 0; j < 16; j++){
+			*(state+j) = msg[i+j] ^ *(state+j);
+		}
+		AES128_encrypt(state, AES_Key);
+	}
+	for(size_t k = i; k < msg_len; k++){
+		*(state+k-i) = msg[k] ^ *(state+k-i);
+	}
+	AES128_encrypt(state, AES_Key);
+	
+
 
     // Copy the result of CBC-MAC-AES to the tag.
     for (int j=0; j<16; j++) {
