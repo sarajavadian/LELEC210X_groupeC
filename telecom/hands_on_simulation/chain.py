@@ -23,7 +23,8 @@ class Chain:
     payload_len = 50  # Number of bits per packet
 
     ## Simulation parameters
-    n_packets = 100  # Number of sent packets
+
+    n_packets = 200  # Number of sent packets
 
     ## Channel parameters
     sto_val = 0
@@ -74,7 +75,7 @@ class Chain:
         return x
 
     ## Rx methods
-    bypass_preamble_detect = False
+    bypass_preamble_detect = True
 
     def preamble_detect(self, y: np.array) -> Optional[int]:
         """
@@ -86,7 +87,8 @@ class Chain:
         """
         raise NotImplementedError
 
-    bypass_cfo_estimation = False
+
+    bypass_cfo_estimation = True 
 
     def cfo_estimation(self, y: np.array) -> float:
         """
@@ -97,7 +99,7 @@ class Chain:
         """
         raise NotImplementedError
 
-    bypass_sto_estimation = False
+    bypass_sto_estimation = True
 
     def sto_estimation(self, y: np.array) -> float:
         """
@@ -123,7 +125,7 @@ class BasicChain(Chain):
 
     cfo_val, sto_val = np.nan, np.nan  # CFO and STO are random
 
-    bypass_preamble_detect = True
+    bypass_preamble_detect = False
 
     def preamble_detect(self, y):
         """
@@ -139,21 +141,32 @@ class BasicChain(Chain):
 
         return None
 
-    bypass_cfo_estimation = True
+    bypass_cfo_estimation = False
 
     def cfo_estimation(self, y):
         """
         Estimates CFO using Moose algorithm, on first samples of preamble.
         """
         # TO DO: extract 2 blocks of size N*R at the start of y
-
         # TO DO: apply the Moose algorithm on these two blocks to estimate the CFO
+        
+        N = 4 # voir notice
+        R = self.osr_rx
+        Nt = N*R
+        B = self.bit_rate
+        
+        blocks = y[0: 2*Nt]
+        denom = 2*np.pi*Nt/(R*B)
+        alpha = complex(0,0)
+        
+        for l in range(Nt):
+            alpha += y[Nt+l]* y[l].conjugate()
 
-        cfo_est = 0  # Default value, to change
+        cfo_est = np.angle(alpha) / denom
 
-        return cfo_est
+        return int(cfo_est)
 
-    bypass_sto_estimation = True
+    bypass_sto_estimation = False
 
     def sto_estimation(self, y):
         """
@@ -180,12 +193,33 @@ class BasicChain(Chain):
     def demodulate(self, y):
         """
         Non-coherent demodulator.
+    
         """
-        R = self.osr_rx  # Receiver oversampling factor
-        nb_syms = len(y) // R  # Number of CPFSK symbols in y
+        B = self.bit_rate  # B=1/T
+        fd = self.freq_dev  # Frequency deviation, Delta_f
+        R = self.osr_rx # oversampling factor
+        r0 = np.zeros(len(y)//R,dtype=np.complex64)
+        r1 = np.zeros(len(y)//R,dtype=np.complex64)
+
+        for i in range(len(y)//R):
+            for j in range(R):
+                r0[i] += y[i * R + j] * np.exp( 1j * 2 * np.pi * fd * (j / (B * R)))
+                r1[i] += y[i * R + j] * np.exp(-1j * 2 * np.pi * fd * (j / (B * R)))
+        r0 /= R
+        r1 /= R
+
+        result = np.ones(len(y)//R, dtype = int)
+
+        for i in range(len(result)):
+            if np.absolute(r0[i]) > np.absolute(r1[i]):
+                result[i] = 0
+
+        return result
+        #R = self.osr_rx  # Receiver oversampling factor
+        #nb_syms = len(y) // R  # Number of CPFSK symbols in y
 
         # Group symbols together, in a matrix. Each row contains the R samples over one symbol period
-        y = np.resize(y, (nb_syms, R))
+        #y = np.resize(y, (nb_syms, R))
 
         # TO DO: generate the reference waveforms used for the correlation
         # hint: look at what is done in modulate() in chain.py
@@ -194,6 +228,6 @@ class BasicChain(Chain):
 
         # TO DO: performs the decision based on r0 and r1
 
-        bits_hat = np.zeros(nb_syms, dtype=int)  # Default value, all bits=0. TO CHANGE!
+        #bits_hat = np.zeros(nb_syms, dtype=int)  # Default value, all bits=0. TO CHANGE!
 
-        return bits_hat
+        #return bits_hat

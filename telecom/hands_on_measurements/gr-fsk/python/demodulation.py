@@ -26,10 +26,23 @@ def demodulate(y, B, R, Fdev):
     """
     Non-coherent demodulator.
     """
-    nb_syms = int(len(y) / R)
-    bits_hat = np.zeros(nb_syms, dtype=int)
-    return bits_hat  # TODO
+    r0 = np.zeros(len(y)//R,dtype=np.complex64)
+    r1 = np.zeros(len(y)//R,dtype=np.complex64)
 
+    for i in range(len(y)//R):
+        for j in range(R):
+            r0[i] += y[i * R + j] * np.exp( 1j * 2 * np.pi * Fdev * (j / (B * R)))
+            r1[i] += y[i * R + j] * np.exp(-1j * 2 * np.pi * Fdev * (j / (B * R)))
+    r0 /= R
+    r1 /= R
+
+    result = np.ones(len(y)//R, dtype = int)
+
+    for i in range(len(result)):
+        if np.absolute(r0[i]) > np.absolute(r1[i]):
+            result[i] = 0
+
+    return result
 
 class demodulation(gr.basic_block):
     """
