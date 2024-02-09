@@ -99,3 +99,5 @@ fpga/*/timing/
 fpga/*/*_sim/
 fpga/incremental_db/
 .metadata/
+
+.vscode/

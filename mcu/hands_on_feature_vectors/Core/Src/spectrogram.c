@@ -5,7 +5,7 @@
  *      Author: Teaching Assistants of LELEC210x
  */
 
-#include "spectrogram.h"
+#include "Inc/spectrogram.h"
 #include "spectrogram_tables.h"
 #include "config.h"
 #include "arm_math.h"
