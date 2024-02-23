@@ -256,7 +256,7 @@ blocks:
     bus_structure: null
     coordinate: [320, 204.0]
     rotation: 0
-    state: enabled
+    state: disabled
 - name: fsk_packet_parser_0
   id: fsk_packet_parser
   parameters:
@@ -295,7 +295,7 @@ blocks:
     bus_structure: null
     coordinate: [320, 380.0]
     rotation: 0
-    state: disabled
+    state: enabled
 - name: fsk_synchronization_0
   id: fsk_synchronization
   parameters:
