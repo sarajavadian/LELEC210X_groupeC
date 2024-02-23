@@ -322,12 +322,35 @@ sudo apt-get update
 sudo apt-get install gr-limesdr
 ```
 
+#### (After H4) Ubuntu - Installing Gr-LimeSDR custom components
+
+First you need to install the following components :
+
+```bash
+sudo apt install liblimesuite-dev swig4.0 liborc-0.4-dev
+```
+
+Then, go into the `./telecom/gr-limesdr` directory and install:
+
+```bash
+mkdir build
+cd build /
+cmake ..
+sudo make install
+sudo ldconfig
+```
+
 #### Ubuntu - Testing the installation of LimeSDR
 
 You can launch GNU Radio companion. On the right part of the window, at the end of the list,
 LimeSDR components should now appear.
 
 ### (Only for WSL users) Connect the LimeSDR to the WSL via USB pass-through
+
+> [!IMPORTANT]
+> We assume you installed `usbipb-win` 4.0.0 or above.
+> For earlier versions, the commands are not exactly the same
+> so we ask you to upgrade your version.
 
 The LimeSDR will be connected to your computer but should be interfaced with your Ubuntu and not Windows. To do so, we will need to create a passthrough using [USBIPD-WIN](https://learn.microsoft.com/en-us/windows/wsl/connect-usb) supported by Microsoft. Go to this [git project](https://github.com/dorssel/usbipd-win/releases) and download the `.msi` file of the latest version and install it.
 On Ubuntu, you will need to run the two following commands:
@@ -338,17 +361,23 @@ sudo update-alternatives --install /usr/local/bin/usbip usbip  /usr/lib/linux-to
 ```
 
 You can now attach any device from your computer to Ubuntu.
-To do so, open a PowerShell or prompt in Windows and use the three following commands to respectively list all the USB devices connected to windows, attach to WSL the device with the given busid, detach the device from WSL.
+To do so, open a PowerShell or prompt in Windows and use the four following commands to respectively
+list all the USB devices connected to windows, bind a given busid,
+attach to WSL the device with the given busid, and detach the device from WSL.
 
 ```bat
-usbipd wsl list
-usbipd wsl attach --busid <busid>
-usbipd wsl detach --busid <busid>
+usbipd list
+usbipd bind --busid <busid>
+usbipd attach --wsl --busid <busid>
+usbipd detach --busid <busid>
 ```
+
+The last command should only be used if you want to disconnect your device.
 
 > [!NOTE]
 > If you have `error: Access denied; this operation requires administrator privileges`, you should
-> run the same commands but in a administrator terminal. Do forget that `wsl` must be running in a separate
+> run the same commands but in a administrator terminal.
+> Do not forget that `wsl` must be running in a separate
 > Windows shell.
 >
 > Also, the command may tell you to update WSL. If so, please do with `wsl --update`.

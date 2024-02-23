@@ -1,3 +1,4 @@
+# -*- coding: utf-8 -*-
 """
 uart-reader.py
 ELEC PROJECT - 210x
@@ -71,14 +72,14 @@ if __name__ == "__main__":
         msg_counter = 0
 
         for msg in input_stream:
-            print(f"Acquisition #{msg_counter}")
+            print("Acquisition #{}".format(msg_counter))
 
             buffer_size = len(msg)
             times = np.linspace(0, buffer_size - 1, buffer_size) * 1 / FREQ_SAMPLING
             voltage_mV = msg * VDD / VAL_MAX_ADC * 1e3
 
             plt.plot(times, voltage_mV)
-            plt.title(f"Acquisition #{msg_counter}")
+            plt.title("Acquisition #{}".format(msg_counter))
             plt.xlabel("Time (s)")
             plt.ylabel("Voltage (mV)")
             plt.ylim([0, 3300])
@@ -86,6 +87,6 @@ if __name__ == "__main__":
             plt.pause(0.001)
             plt.cla()
 
-            generate_audio(msg, f"acq-{msg_counter}")
+            generate_audio(msg, "acq-{}".format(msg_counter))
 
             msg_counter += 1
