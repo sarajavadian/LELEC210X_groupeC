@@ -26,9 +26,9 @@ print("min : " + str(np.min(Y)))
 a, b = 0, nbr_samples # boundaries between which a unique cycle appears
 X, Y = X[a:b], Y[a:b]
 avg_pwr = np.mean(Y)
-print("Average power over one cycle : {0} mW".format(avg_pwr))
-print("Energy consumption over one cycle : {0} mW*s".format(scipy.integrate.simps(Y, X)))
-print("Energy consumption over one cycle : {0} µW*h".format(scipy.integrate.simps(Y, X)*1000/3600))
+print("Average power : {0} mW".format(avg_pwr))
+print("Energy consumption : {0} mW*s".format(scipy.integrate.simps(Y, X)))
+print("Energy consumption : {0} µW*h".format(scipy.integrate.simps(Y, X)*1000/3600))
 
 plt.plot(X, Y) 
 plt.ylim((0, np.max(Y)*1.1))
