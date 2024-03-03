@@ -2,12 +2,13 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
-R = 52.2 #value of the used resistance
+R = 99.9 #value of the used resistance
 
-file = "Before_optimization_52.2Ohm.csv"
+file = "8MHz,SRAM1_Deactivated_99.9Ohm_5.csv"
 f = open(file, "r")
 text = f.readlines()
 nbr_samples = int(text[3].split(",")[1]) # extract the number of samples
+print(nbr_samples)
 text = text[8:] # discard irrelevant information
 
 X = np.zeros(nbr_samples)
@@ -20,8 +21,9 @@ for i, line in enumerate(text):
 X = X - X[0] # -X[0] to remove the time offset
 Y = (3.3-Y)* Y/R # function to apply to Y
 Y *= 1000 # in mW instead of W
+print("min : " + str(np.min(Y)))
 
-a, b = 1270, 2990 # boundaries between which a unique cycle appears
+a, b = 0, nbr_samples # boundaries between which a unique cycle appears
 X, Y = X[a:b], Y[a:b]
 avg_pwr = np.mean(Y)
 print("Average power over one cycle : {0} mW".format(avg_pwr))
