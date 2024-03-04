@@ -1,4 +1,6 @@
 import pickle
+from .utils.plots import plot_specgram
+import matplotlib.pyplot as plt
 from pathlib import Path
 from typing import Optional
 
@@ -65,5 +67,9 @@ def main(
             logger.info(f"Parsed payload into Mel vectors: {melvecs}")
 
             if m:
-                # TODO: perform classification
-                pass
+                plot, ax = plt.subplots()
+                plot_specgram(melvecs, ax)
+                plt.show()
+                melvecs = melvecs.reshape((1, melvec_length*n_melvecs))
+                result = m.predict(melvecs)
+                print(result)

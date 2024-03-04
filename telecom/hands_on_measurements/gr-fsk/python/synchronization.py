@@ -19,9 +19,10 @@
 #
 
 import numpy as np
+from .utils import timeit
 from gnuradio import gr
 
-
+@timeit
 def cfo_estimation(y, B, R, Fdev):
     """
     Estimate CFO using Moose algorithm, on first samples of preamble
@@ -29,21 +30,21 @@ def cfo_estimation(y, B, R, Fdev):
     # TO DO: extract 2 blocks of size N*R at the start of y
     # TO DO: apply the Moose algorithm on these two blocks to estimate the CFO
     
-    N = 2 # voir notice
+    N = 4 # voir notice
     Nt = N*R
-   
     
     blocks = y[0: 2*Nt]
     denom = 2*np.pi*Nt/(R*B)
-    alpha = complex(0,0)
     
-    for l in range(Nt):
-        alpha += y[Nt+l]* y[l].conjugate()
-
+    alpha = np.sum(blocks[Nt : 2*Nt] * blocks[0:Nt].conjugate())
+    #alpha = 0 + 0*1j
+    #for l in range(Nt):
+    #    alpha += blocks[Nt+l]* blocks[l].conjugate()
+    
     cfo_est = np.angle(alpha) / denom
 
     return int(cfo_est)
-
+@timeit
 def sto_estimation(y, B, R, Fdev):
     """
     Estimate symbol timing (fractional) based on phase shifts
