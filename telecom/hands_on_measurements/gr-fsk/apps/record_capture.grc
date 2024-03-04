@@ -32,11 +32,23 @@ options:
     state: enabled
 
 blocks:
+- name: K_threshold
+  id: variable
+  parameters:
+    comment: ''
+    value: '7'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [912, 60.0]
+    rotation: 0
+    state: enabled
 - name: carrier_freq
   id: variable
   parameters:
     comment: ''
-    value: 868e6
+    value: 864e6
   states:
     bus_sink: false
     bus_source: false
@@ -44,6 +56,18 @@ blocks:
     coordinate: [202, 87]
     rotation: 0
     state: enabled
+- name: crc_len
+  id: variable
+  parameters:
+    comment: ''
+    value: '1'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [664, 36.0]
+    rotation: 0
+    state: true
 - name: data_rate
   id: variable
   parameters:
@@ -54,6 +78,42 @@ blocks:
     bus_source: false
     bus_structure: null
     coordinate: [301, 15]
+    rotation: 0
+    state: true
+- name: hdr_len
+  id: variable
+  parameters:
+    comment: ''
+    value: '8'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [760, 44.0]
+    rotation: 0
+    state: true
+- name: packet_len
+  id: variable
+  parameters:
+    comment: ''
+    value: hdr_len+payload_len+crc_len
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [568, 116.0]
+    rotation: 0
+    state: true
+- name: payload_len
+  id: variable
+  parameters:
+    comment: ''
+    value: '100'
+  states:
+    bus_sink: false
+    bus_source: false
+    bus_structure: null
+    coordinate: [568, 36.0]
     rotation: 0
     state: true
 - name: rx_gain
@@ -87,7 +147,7 @@ blocks:
     alias: ''
     append: 'False'
     comment: ''
-    file: /home/marconi/fsk_capture.mat
+    file: /home/tommy/Documents/LELEC210X_groupeC/telecom/hands_on_measurements/gr-fsk/misc/fsk_capture.mat
     type: complex
     unbuffered: 'False'
     vlen: '1'
@@ -98,21 +158,26 @@ blocks:
     coordinate: [368, 185]
     rotation: 0
     state: true
-- name: limesdr_source_0
-  id: limesdr_source
+- name: limesdr_fpga_source_0
+  id: limesdr_fpga_source
   parameters:
     affinity: ''
     alias: ''
     allow_tcxo_dac: '0'
-    analog_bandw_ch0: ''
+    analog_bandw_ch0: 1.5e6
     analog_bandw_ch1: 1.5e6
-    calibr_bandw_ch0: ''
+    calibr_bandw_ch0: 2.5e6
     calibr_bandw_ch1: 2.5e6
+    ch_align: 'False'
     channel_mode: '0'
     comment: ''
     dacVal: '180'
     digital_bandw_ch0: samp_rate
     digital_bandw_ch1: samp_rate
+    dspcfg_PASSTHROUGH_LEN: (packet_len+1)*8*int(samp_rate/data_rate)+int(samp_rate/data_rate)
+      + 1000
+    dspcfg_THRESHOLD: K_threshold
+    dspcfg_preamble_en: '1'
     filename: ''
     gain_dB_ch0: rx_gain
     gain_dB_ch1: '1'
@@ -130,9 +195,9 @@ blocks:
     bus_sink: false
     bus_source: false
     bus_structure: null
-    coordinate: [90, 185]
+    coordinate: [24, 220.0]
     rotation: 0
-    state: enabled
+    state: true
 - name: qtgui_sink_x_0
   id: qtgui_sink_x
   parameters:
@@ -164,8 +229,8 @@ blocks:
     state: true
 
 connections:
-- [limesdr_source_0, '0', blocks_file_sink_0, '0']
-- [limesdr_source_0, '0', qtgui_sink_x_0, '0']
+- [limesdr_fpga_source_0, '0', blocks_file_sink_0, '0']
+- [limesdr_fpga_source_0, '0', qtgui_sink_x_0, '0']
 
 metadata:
   file_format: 1
