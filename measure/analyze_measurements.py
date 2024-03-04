@@ -2,9 +2,9 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
-R = 99.9 #value of the used resistance
+R = 52.2 #value of the used resistance
 
-file = "8MHz,SRAM1_Deactivated_99.9Ohm_5.csv"
+file = "Before_optimization_52.2Ohm.csv"
 f = open(file, "r")
 text = f.readlines()
 nbr_samples = int(text[3].split(",")[1]) # extract the number of samples

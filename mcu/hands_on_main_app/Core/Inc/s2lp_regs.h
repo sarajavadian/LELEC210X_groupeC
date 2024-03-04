@@ -51,8 +51,8 @@
  */
 #define GPIO0_CONF_ADDR			((uint8_t)0x00)
 
-#define GPIO_SELECT_REGMASK			((uint8_t)0xF8)
-#define GPIO_MODE_REGMASK			((uint8_t)0x03)
+#define GPIO_SELECT_REGMASK			((uint8_t)0xF8)// 0b11111000
+#define GPIO_MODE_REGMASK			((uint8_t)0x03)// 0b00000011
 
 
 /**
