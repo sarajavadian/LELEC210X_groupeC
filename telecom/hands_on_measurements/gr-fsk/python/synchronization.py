@@ -19,9 +19,10 @@
 #
 
 import numpy as np
+from .utils import timeit
 from gnuradio import gr
 
-
+@timeit
 def cfo_estimation(y, B, R, Fdev):
     """
     Estimate CFO using Moose algorithm, on first samples of preamble
@@ -44,6 +45,7 @@ def cfo_estimation(y, B, R, Fdev):
 
     return int(cfo_est)
 
+@timeit
 def sto_estimation(y, B, R, Fdev):
     """
     Estimate symbol timing (fractional) based on phase shifts

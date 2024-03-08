@@ -19,9 +19,10 @@
 #
 
 import numpy as np
+from .utils import timeit
 from gnuradio import gr
 
-
+@timeit
 def demodulate(y, B, R, Fdev):
     """
     Non-coherent demodulator.
