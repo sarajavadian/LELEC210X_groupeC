@@ -23,27 +23,50 @@ from .utils import timeit
 from gnuradio import gr
 
 @timeit
+<<<<<<< HEAD
+=======
+
+>>>>>>> 8aafecc72c2fc0995174aa08f42bdd205edbbfee
 def demodulate(y, B, R, Fdev):
-    """
-    Non-coherent demodulator.
-    """
-    r0 = np.zeros(len(y)//R,dtype=np.complex64)
-    r1 = np.zeros(len(y)//R,dtype=np.complex64)
+        """
+        Non-coherent demodulator.
+    
+        """
+        nb_syms = len(y)//R # number of CPFSK symbols in y
+        
+        r0 = np.zeros(nb_syms, dtype=np.complex64)
+        r1 = np.zeros(nb_syms, dtype=np.complex64)
+        result = np.ones(nb_syms, dtype = int)
+        
+        # Grouping symbols together : each row contains R samples over one T
+        y_new = np.resize(y,(nb_syms, R))
+        
+        j = np.arange(0, R, 1, dtype=np.complex64)
+        exp0 = np.exp( 1j * 2 * np.pi * Fdev * (j / (B * R)))
+        exp1 = np.exp(-1j * 2 * np.pi * Fdev * (j / (B * R)))
+        
+        r0_new = np.sum(y_new * exp0, axis=1) / R
+        r1_new = np.sum(y_new * exp1, axis=1) / R   
+        
+        
+        result[np.absolute(r0_new) > np.absolute(r1_new)] = 0
 
-    for i in range(len(y)//R):
-        for j in range(R):
-            r0[i] += y[i * R + j] * np.exp( 1j * 2 * np.pi * Fdev * (j / (B * R)))
-            r1[i] += y[i * R + j] * np.exp(-1j * 2 * np.pi * Fdev * (j / (B * R)))
-    r0 /= R
-    r1 /= R
 
-    result = np.ones(len(y)//R, dtype = int)
+        #for i in range(nb_syms):
+            #for j in range(R):
+                #r0[i] += y[i * R + j] * np.exp( 1j * 2 * np.pi * fd * (j / (B * R)))
+                #r1[i] += y[i * R + j] * np.exp(-1j * 2 * np.pi * fd * (j / (B * R)))
+        #r0 /= R
+        #r1 /= R
+        
+        #print(r0_new)
+        #print(r0)
 
-    for i in range(len(result)):
-        if np.absolute(r0[i]) > np.absolute(r1[i]):
-            result[i] = 0
+        #for i in range(nb_syms):
+        #    if np.absolute(r0_new[i]) > np.absolute(r1_new[i]):
+        #        result[i] = 0
 
-    return result
+        return result
 
 class demodulation(gr.basic_block):
     """
