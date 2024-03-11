@@ -47,6 +47,7 @@ void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
 
 // Assumes payload is already in place in the packet
 int make_packet(uint8_t *packet, size_t payload_len, uint8_t sender_id, uint32_t serial) {
+	start_cycle_count();
     size_t packet_len = payload_len + PACKET_HEADER_LENGTH + PACKET_TAG_LENGTH;
 	// reserved bite : one byte of 0 
 
@@ -68,6 +69,7 @@ int make_packet(uint8_t *packet, size_t payload_len, uint8_t sender_id, uint32_t
 
 	// So is the tag
 	memset(packet + payload_len + PACKET_HEADER_LENGTH, 0, PACKET_TAG_LENGTH);
+	stop_cycle_count("Memset");
 
 	// TO DO :  replace the two previous command by properly
 	//			setting the packet header with the following structure :
@@ -91,7 +93,9 @@ int make_packet(uint8_t *packet, size_t payload_len, uint8_t sender_id, uint32_t
 
 	// For the tag field, you have to calculate the tag. The function call below is correct but
 	// tag_cbc_mac function, calculating the tag, is not implemented.
+	start_cycle_count();
     tag_cbc_mac(packet + payload_len + PACKET_HEADER_LENGTH, packet, payload_len + PACKET_HEADER_LENGTH);
+    stop_cycle_count("tag");
 
     return packet_len;
 }

@@ -9,7 +9,7 @@
 #define BASE_FREQ 864000000 // Carrier frequency, in Hz
 #define DATARATE 50000 // Data rate in 2FSK, in bit/s
 #define FREQDEV DATARATE/4 // Frequency deviation, in Hz
-#define PA_LEVEL 0 // Default Tx output power, in dBm
+#define PA_LEVEL -15 // Default Tx output power, in dBm
 // === END of communication parameters
 
 #define XTAL_FREQ 50000000

@@ -62,12 +62,14 @@ static void print_encoded_packet(uint8_t *packet) {
 
 static void encode_packet(uint8_t *packet, uint32_t* packet_cnt) {
 	// BE encoding of each mel coef
-	for (size_t i=0; i<N_MELVECS; i++) {
-		for (size_t j=0; j<MELVEC_LENGTH; j++) {
+	start_cycle_count();
+	for (size_t i=0; i<N_MELVECS; i++) { // 20
+		for (size_t j=0; j<MELVEC_LENGTH; j++) { // 20
 			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2]   = mel_vectors[i][j] >> 8;
 			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2+1] = mel_vectors[i][j] & 0xFF;
 		}
 	}
+	stop_cycle_count("Double loops");
 	// Write header and tag into the packet.
 	make_packet(packet, PAYLOAD_LENGTH, 0, *packet_cnt);
 	*packet_cnt += 1;
@@ -81,13 +83,9 @@ static void encode_packet(uint8_t *packet, uint32_t* packet_cnt) {
 static void send_spectrogram() {
 	uint8_t packet[PACKET_LENGTH];
 
-	start_cycle_count();
 	encode_packet(packet, &packet_cnt);
-	stop_cycle_count("Encode packet");
 
-	start_cycle_count();
 	S2LP_Send(packet, PACKET_LENGTH);
-	stop_cycle_count("Send packet");
 
 	print_encoded_packet(packet);
 }
