@@ -144,6 +144,7 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
   RCC->AHB1SMENR &= ~(1 << 9); // deactivate SRAM1 (has to be after the RCC is initialized) (SystemClock_Config() initialized it)
+  PWR->CR1 |= (1 << 14); // set the low power run bit (LPR)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
