@@ -2,10 +2,12 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
-R = 52.2 #value of the used resistance
-V_sup = 2 #value of the supplied voltage
+file = "Measure_meeting_2/2MHz_voltage_final-1.8-19.7.csv"
 
-file = "2MHZ_52.2Ohm.csv"
+R = float(file.split("-")[2][:-4]) #value of the used resistance
+V_sup = float(file.split("-")[1]) #value of the supplied voltage
+#V_sup -= 0.037 #offset of the ADALM
+
 f = open(file, "r")
 text = f.readlines()
 f.close()
@@ -20,14 +22,17 @@ for i, line in enumerate(text):
     X[i] = float(splitted[1])
     Y[i] = float(splitted[2])
 X = X - X[0] # -X[0] to remove the time offset
-Y = (V_sup-Y)* Y/R # function to apply to Y
+I = Y/R
+Y = (V_sup-Y)* I # function to apply to Y
 Y *= 1000 # in mW instead of W
 print("min : " + str(np.min(Y)) + " mW")
+print("min : " + str(1e3 * np.min(I)) + " mA")
 
 a, b = 0, nbr_samples # boundaries between which a unique cycle appears
 X, Y = X[a:b], Y[a:b]
 avg_pwr = np.mean(Y)
 print("Average power : {0} mW".format(avg_pwr))
+print("Average current : {0} mA".format(1e3*np.mean(I)))
 #print("Energy consumption : {0} mW*s".format(scipy.integrate.simps(Y, X)))
 #print("Energy consumption : {0} µW*h".format(scipy.integrate.simps(Y, X)*1000/3600))
 
@@ -35,5 +40,6 @@ plt.plot(X, Y)
 plt.ylim((0, np.max(Y)*1.1))
 plt.ylabel("Power consumed [mW]")
 plt.xlabel("Time [s]")
-plt.title("Evolution of the power consumed over time")
+plt.title(file.split("-")[0].split("/")[-1].replace("_", " "))
+plt.savefig("Graph_power_consumption.jpg")
 plt.show()
