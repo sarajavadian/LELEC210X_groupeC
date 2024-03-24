@@ -39,7 +39,7 @@ static void StopADCAcq() {
 
 static void print_spectrogram(void) {
 #if (DEBUGP == 1)
-	start_cycle_count();
+	//start_cycle_count();
 	DEBUG_PRINT("Acquisition complete, sending the following FVs\r\n");
 	for(unsigned int j=0; j < N_MELVECS; j++) {
 		DEBUG_PRINT("FV #%u:\t", j+1);
@@ -48,7 +48,7 @@ static void print_spectrogram(void) {
 		}
 		DEBUG_PRINT("\r\n");
 	}
-	stop_cycle_count("Print FV");
+	//stop_cycle_count("Print FV");
 #endif
 }
 
@@ -62,14 +62,12 @@ static void print_encoded_packet(uint8_t *packet) {
 
 static void encode_packet(uint8_t *packet, uint32_t* packet_cnt) {
 	// BE encoding of each mel coef
-	start_cycle_count();
 	for (size_t i=0; i<N_MELVECS; i++) { // 20
 		for (size_t j=0; j<MELVEC_LENGTH; j++) { // 20
 			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2]   = mel_vectors[i][j] >> 8;
 			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2+1] = mel_vectors[i][j] & 0xFF;
 		}
 	}
-	stop_cycle_count("Double loops");
 	// Write header and tag into the packet.
 	make_packet(packet, PAYLOAD_LENGTH, 0, *packet_cnt);
 	*packet_cnt += 1;
@@ -101,11 +99,11 @@ static void ADC_Callback(int buf_cplt) {
 		Error_Handler();
 	}
 	ADCDataRdy[buf_cplt] = 1;
-	//start_cycle_count();
+//	start_cycle_count();
 	Spectrogram_Format((q15_t *)ADCData[buf_cplt]);
 	Spectrogram_Compute((q15_t *)ADCData[buf_cplt], mel_vectors[cur_melvec]);
 	cur_melvec++;
-	//stop_cycle_count("spectrogram");
+//	stop_cycle_count("spectrogram : total number of cycles");
 	ADCDataRdy[buf_cplt] = 0;
 
 	if (rem_n_bufs == 0) {

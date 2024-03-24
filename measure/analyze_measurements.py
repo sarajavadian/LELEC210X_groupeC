@@ -2,7 +2,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 import scipy
 
-file = "Measure_meeting_2/2MHz_voltage_final-1.8-19.7.csv"
+file = "TAG_shortened/4MHz_Tag-2.1-14.5.csv"
 
 R = float(file.split("-")[2][:-4]) #value of the used resistance
 V_sup = float(file.split("-")[1]) #value of the supplied voltage
