@@ -183,9 +183,20 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	
 	arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
 
-	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat);
-	arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf);                        // requires 21k cycles -> matrix band implementation could save us some precious cycles.
-	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec);
+	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
+	arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
+	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
 
 	arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
+
+//	int temp;
+//	for (int i=0; i < MELVEC_LENGTH; i++){
+//		temp = 0;
+//		for (int j=0; j < SAMPLES_PER_MELVEC/2; j++){
+//			for (int k=0; k < SAMPLES_PER_MELVEC/2; k++){
+//				temp += hz2mel_inst[i][j] * fftmag_inst[j][i];
+//			}
+//		}
+//	}
+
 }
