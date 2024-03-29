@@ -20,6 +20,7 @@
 /* Includes ------------------------------------------------------------------*/
 #include "main.h"
 #include "adc.h"
+#include "aes.h"
 #include "dma.h"
 #include "spi.h"
 #include "tim.h"
@@ -144,6 +145,7 @@ int main(void)
 
   /* USER CODE BEGIN SysInit */
   RCC->AHB1SMENR &= ~(1 << 9); // deactivate SRAM1 (has to be after the RCC is initialized) (SystemClock_Config() initialized it)
+  PWR->CR1 |= (1 << 14); // set the low power run bit (LPR)
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -152,6 +154,7 @@ int main(void)
   MX_SPI1_Init();
   MX_TIM3_Init();
   MX_ADC1_Init();
+  MX_AES_Init();
   /* USER CODE BEGIN 2 */
   if (ENABLE_UART) {
 	  MX_LPUART1_UART_Init();
@@ -219,7 +222,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_7;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_10;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -234,7 +237,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
   {
     Error_Handler();
   }

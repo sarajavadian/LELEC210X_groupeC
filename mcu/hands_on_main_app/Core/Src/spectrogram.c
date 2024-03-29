@@ -15,9 +15,11 @@
 q15_t buf    [  SAMPLES_PER_MELVEC  ]; // Windowed samples
 q15_t buf_fft[2*SAMPLES_PER_MELVEC  ]; // Double size (real|imag) buffer needed for arm_rfft_q15
 q15_t buf_tmp[  SAMPLES_PER_MELVEC/2]; // Intermediate buffer for arm_mat_mult_fast_q15
+q15_t buf_test    [  SAMPLES_PER_MELVEC  ]; // Windowed samples -> testing buffer
+q15_t buf_test_2    [  SAMPLES_PER_MELVEC  ]; // Windowed samples -> testing buffer
 
 // Convert 12-bit DC ADC samples to Q1.15 fixed point signal and remove DC component
-void Spectrogram_Format(q15_t *buf)
+void Spectrogram_Format(q15_t *in)
 {
 	// STEP 0.1 : Increase fixed-point scale
 	//            --> Pointwise shift
@@ -31,19 +33,36 @@ void Spectrogram_Format(q15_t *buf)
 	// /!\ When multiplying/dividing by a power 2, always prefer shifting left/right instead, ARM instructions to do so are more efficient.
 	// Here we should shift left by 3.
 
-	arm_shift_q15(buf, 3, buf, SAMPLES_PER_MELVEC);
+	arm_shift_q15(in, 3, buf, SAMPLES_PER_MELVEC);
 
 	// STEP 0.2 : Remove DC Component
-	//            --> Pointwise substract
+	//            --> Pointwise subtract
 	//            Complexity: O(N)
 	//            Number of cycles: <TODO>
 
-	// Since we use a signed representation, we should now center the value around zero, we can do this by substracting 2**14.
+	// Since we use a signed representation, we should now center the value around zero, we can do this by subtracting 2**14.
 	// Now the value of buf[i] is in [-2**14 , 2**14 - 1]
 
-	for(uint16_t i=0; i < SAMPLES_PER_MELVEC; i++) { // Remove DC component
-		buf[i] -= (1 << 14);
-	}
+	// can create a vector full of constant number
+	// or (better) create an arm function changing slightly the subtract already implemented but where ?
+
+// -------------------------------TEST--------------------------------------
+// test to check if the loop does the same as the new line -> this is confirmed !
+//	for (uint16_t i=0; i< SAMPLES_PER_MELVEC; i++){
+//		buf[i] -= (1 << 14);
+//	}
+//
+//	printf("1 << 14 en hexa : %x\n", -(1 << 14));
+//	printf("-------------------ARM_OFFSET-------------------\n");
+//	for (int i=0; i<SAMPLES_PER_MELVEC; i++){
+//		printf("%d vs ", buf[i]);
+//		printf("%d\n", buf_test[i]);
+//	}
+//	printf("\n-------------------ARM_OFFSET-------------------\n");
+
+//	start_cycle_count();
+	arm_offset_q15(buf, -(1 << 14), buf, SAMPLES_PER_MELVEC);
+//	stop_cycle_count("0.2");
 }
 
 // Compute spectrogram of samples and transform into MEL vectors.
@@ -80,33 +99,75 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	q15_t vmax;
 	uint32_t pIndex=0;
 
-	arm_absmax_q15(buf_fft, SAMPLES_PER_MELVEC, &vmax, &pIndex);
-
+	arm_absmax_q15(buf_fft, SAMPLES_PER_MELVEC, &vmax, &pIndex); // is there a way to go faster ? Maybe directly output the log2 of vmax such that the loop below is not necessary
+	// -> also check if this is really relevant to multiple by the max, precision-wise. If not much difference is seen, we could simplify the code by removing this part.
 	// STEP 3.2: Normalize the vector - Dynamic range increase
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
 
-	for (int i=0; i < SAMPLES_PER_MELVEC; i++) // We don't use the second half of the symmetric spectrum
-	{
-		buf[i] = (q15_t) (((q31_t) buf_fft[i] << 15) /((q31_t)vmax));
+	// code to get the highest power of 2 contained in vmax (to approximate vmax) (ex : 70 -> 64, 2047 -> 1024)
+//	start_cycle_count();
+	int vmax_round = -1;
+	for (int i=14; vmax_round == -1; i--){
+		if ((vmax >> i) & 1){
+			vmax_round = i;
+		}
 	}
+
+	arm_shift_q15(buf_fft, 15-vmax_round, buf, SAMPLES_PER_MELVEC); // There can be overflow so maybe -1 in the shift. But in that case, the approximation is way off.
+//	stop_cycle_count("3.2");
+
+//	------------------ TEST ------------------------
+//	for (int i=0; i < SAMPLES_PER_MELVEC; i++) // We don't use the second half of the symmetric spectrum
+//	{
+//		buf[i] = (q15_t) (((q31_t) buf_fft[i] << 15) /((q31_t)vmax)); // better to find the closest power of 2 and shift instead.
+//	}
+//	printf("vmax : %d\n", vmax);
+//	printf("vmax_round : %d", vmax_round);
+//	printf("vmax_approx : %f\n", pow(2, vmax_round));
+//	printf("-------------------SCALE_DOWN-------------------\n");
+//		for (int i=0; i<SAMPLES_PER_MELVEC; i++){
+//			printf("from : %d\n", buf_fft[i]);
+//			printf("%d vs ", buf[i]);
+//			printf("%d\n", buf_test[i]);
+//		}
+//	printf("\n-------------------SCALE_DOWN-------------------\n");
+
+	//stop_cycle_count("3.2");
 
 	// STEP 3.3: Compute the complex magnitude
 	//           --> The output buffer is now two times smaller because (real|imag) --> (mag)
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
 
-	arm_cmplx_mag_q15(buf, buf, SAMPLES_PER_MELVEC/2);
+	arm_cmplx_mag_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
 
 	// STEP 3.4: Denormalize the vector
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
 
-	for (int i=0; i < SAMPLES_PER_MELVEC/2; i++)
-	{
-		buf[i] = (q15_t) ((((q31_t) buf[i]) * ((q31_t) vmax) ) >> 15 );
-	}
+	//start_cycle_count();
 
+//	--------------------------------TEST-----------------------------------------
+//	memcpy(buf_test_2, buf, SAMPLES_PER_MELVEC); // just for the test to keep the input buffer and compare it to the output
+//	arm_shift_q15(buf, vmax_round-15, buf_test, SAMPLES_PER_MELVEC/2);
+//	for (int i=0; i < SAMPLES_PER_MELVEC/2; i++)
+//	{
+//		buf[i] = (q15_t) ((((q31_t) buf[i]) * ((q31_t) vmax) ) >> 15 );
+//	}
+//	printf("-------------------SCALE_UP-------------------\n");
+//		for (int i=0; i<SAMPLES_PER_MELVEC/2; i++){
+//			printf("From : %d\n", buf_test_2[i]);
+//			printf("%d vs ", buf[i]);
+//			printf("%d\n", buf_test[i]);
+//		}
+//	printf("\n-------------------SCALE_UP-------------------\n");
+
+//	start_cycle_count();
+	arm_shift_q15(buf, vmax_round-15, buf, SAMPLES_PER_MELVEC/2);
+//	stop_cycle_count("3.4");
+
+	//stop_cycle_count("3.4");
 	// STEP 4:   Apply MEL transform
 	//           --> Fast Matrix Multiplication
 	//           Complexity: O(Nmel*N)
@@ -122,9 +183,20 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	
 	arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
 
-	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat);
-	arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf);
-	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec);
+	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
+	arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
+	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
 
 	arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
+
+//	int temp;
+//	for (int i=0; i < MELVEC_LENGTH; i++){
+//		temp = 0;
+//		for (int j=0; j < SAMPLES_PER_MELVEC/2; j++){
+//			for (int k=0; k < SAMPLES_PER_MELVEC/2; k++){
+//				temp += hz2mel_inst[i][j] * fftmag_inst[j][i];
+//			}
+//		}
+//	}
+
 }
