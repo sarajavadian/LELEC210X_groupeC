@@ -182,7 +182,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 
 	// /!\ In order to avoid overflows completely the input signals should be scaled down. Scale down one of the input matrices by log2(numColsA) bits to avoid overflows,
 	// as a total of numColsA additions are computed internally for each output element. Because our hz2mel_mat matrix contains lots of zeros in its rows, this is not necessary.
-	
+	start_cycle_count();
 	arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
 
 	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
@@ -190,7 +190,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
 
 	arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
-
+	stop_cycle_count("Leur_calcul");
 
 	///////////////////////// MULTIPLICATION IMPLEMENTATION /////////////////////////
 
@@ -202,9 +202,9 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	    //     printf("%d\n", result[i]);
 	    // }
 
+	start_cycle_count();
 	q63_t result_temp[MELVEC_LENGTH];
 	q15_t our_melvec[MELVEC_LENGTH];
-	q63_t one = 1;
 
 	for (uint8_t i = 0; i < MELVEC_LENGTH; i++){
 		uint8_t j = start_idx[i];
@@ -214,23 +214,16 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 
 		//our_melvec[i] = (q15_t) (((result_temp[i] >> 33) << 33) << 15);
 		//our_melvec[i] = (q15_t) ( (result_temp[i]) / ((q63_t)1 << 47) );
-		our_melvec[i] = ((result_temp[i]) >> 48);
-        //q63_t sign = (result_temp[i] & (1 << 63)) >> 33;
-		//sign = sign | our_melvec
-		//our_melvec[i] = (q15_t) (result_temp[i])
+		//our_melvec[i] = ((result_temp[i]) >> 48);
+        q63_t sign = result_temp[i] & 0x8000000000000000;
+        q15_t temp = (q15_t) (result_temp[i] >> 15);
+        temp  = ((temp << 1) >> 1);
+        sign = (sign >> 48);
+        our_melvec[i] = temp | (q15_t) sign;
+
+
 	}
-
-
-	// Define a scaling factor to bring q63_t into the range of q15_t : #define SCALE_FACTOR ((q63_t)1 << 47)  // 2^(63 - 16)
-	// Conversion functionq15_t convert_q63_to_q15(q63_t input) {
-	// Divide the q63_t input by the scaling factor and cast to q15_t
-	//return (q15_t)(input / SCALE_FACTOR); }
-	printf("%d \n", one);
-	printf("%ld \n", one);
-	printf("%X \n", one);
-	printf("%lX \n", one);
-	printf("%lld \n", one);
-
+	stop_cycle_count("Our_calcul");
 
 	printf("Buffer :\n");
 	for (int k = 0; k < SAMPLES_PER_MELVEC/2; k++){
@@ -238,11 +231,11 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	}
 	printf("\n Our_melvec: \n");
 	for (int k = 0; k < MELVEC_LENGTH; k++){
-		printf("%ld  ", result_temp[k]);
+		printf("%d  ", our_melvec[k]);
 	}
 	printf("\n Original: \n");
 	for (int k = 0; k < MELVEC_LENGTH; k++){
-		printf("%X  ", melvec[k]);
+		printf("%d  ", melvec[k]);
 	}
 	printf("\n");
 
