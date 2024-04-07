@@ -14,7 +14,7 @@
 #define RUN_CONFIG MAIN_APP
 
 // Radio parameters
-#define ENABLE_RADIO 1
+#define ENABLE_RADIO 0
 
 // General UART enable/disable (disable for low-power operation)
 #define ENABLE_UART 1
@@ -29,7 +29,7 @@
 #define N_MELVECS 20
 
 // Enable performance measurements
-#define PERF_COUNT 1
+#define PERF_COUNT 0
 
 // Enable debug print
 #define DEBUGP 1

@@ -6,6 +6,8 @@
  */
 
 #include <stdio.h>
+#include <stdlib.h>
+#include <math.h>
 #include "spectrogram.h"
 #include "spectrogram_tables.h"
 #include "config.h"
@@ -188,6 +190,107 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
 
 	arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
+
+
+	///////////////////////// MULTIPLICATION IMPLEMENTATION /////////////////////////
+
+	//for (int i = 0; i < NB_LINE; i++){
+	    //     int j = start_idx[i];
+	    //     int l = length[i];
+
+	    //     result[i] = dot_product(matrix + i * NB_COL + j, vect + j, l);
+	    //     printf("%d\n", result[i]);
+	    // }
+
+	q63_t result_temp[MELVEC_LENGTH];
+	q15_t our_melvec[MELVEC_LENGTH];
+	q63_t one = 1;
+
+	for (uint8_t i = 0; i < MELVEC_LENGTH; i++){
+		uint8_t j = start_idx[i];
+		uint8_t l = length[i];
+
+		arm_dot_prod_q15(hz2mel_mat + i*SAMPLES_PER_MELVEC/2 + j, buf + j, l, result_temp + i);
+
+		//our_melvec[i] = (q15_t) (((result_temp[i] >> 33) << 33) << 15);
+		//our_melvec[i] = (q15_t) ( (result_temp[i]) / ((q63_t)1 << 47) );
+		our_melvec[i] = ((result_temp[i]) >> 48);
+        //q63_t sign = (result_temp[i] & (1 << 63)) >> 33;
+		//sign = sign | our_melvec
+		//our_melvec[i] = (q15_t) (result_temp[i])
+	}
+
+
+	// Define a scaling factor to bring q63_t into the range of q15_t : #define SCALE_FACTOR ((q63_t)1 << 47)  // 2^(63 - 16)
+	// Conversion functionq15_t convert_q63_to_q15(q63_t input) {
+	// Divide the q63_t input by the scaling factor and cast to q15_t
+	//return (q15_t)(input / SCALE_FACTOR); }
+	printf("%d \n", one);
+	printf("%ld \n", one);
+	printf("%X \n", one);
+	printf("%lX \n", one);
+	printf("%lld \n", one);
+
+
+	printf("Buffer :\n");
+	for (int k = 0; k < SAMPLES_PER_MELVEC/2; k++){
+		printf("%d  ", buf[k]);
+	}
+	printf("\n Our_melvec: \n");
+	for (int k = 0; k < MELVEC_LENGTH; k++){
+		printf("%ld  ", result_temp[k]);
+	}
+	printf("\n Original: \n");
+	for (int k = 0; k < MELVEC_LENGTH; k++){
+		printf("%X  ", melvec[k]);
+	}
+	printf("\n");
+
+
+	//q15_t *our_melvec = (q15_t *) calloc(MELVEC_LENGTH, sizeof(q15_t));
+	//q15_t *buf_norm = (q15_t *) malloc(SAMPLES_PER_MELVEC/2 * sizeof(q15_t));
+
+	// Normalisation de buf : on divise par log2(SAMPLES_PER_MELVEC/2) = 8 -> revient à shifter à droite de 3 bits
+	//arm_shift_q15(buf, -3, buf_norm, SAMPLES_PER_MELVEC/2);
+
+	//for (uint16_t k = 0; k < NB_ENTRIES; k++){
+		//uint8_t i = i_indexes[k];
+		//uint8_t j = j_indexes[k];
+		//our_melvec[i] += hz2mel_mat[i * SAMPLES_PER_MELVEC/2 + j] * buf_norm[j];
+	//}
+
+	//------- PRINT ----------
+
+	//printf("Buffer :\n");
+	//for (uint8_t k = 0; k < SAMPLES_PER_MELVEC/2; k++){
+		//printf("%d ", buf[k]);
+	//}
+	//printf("\n");
+
+	//printf("Normalized buffer :\n");
+	//for (uint8_t k = 0; k < SAMPLES_PER_MELVEC/2; k++){
+		//printf("%d ", buf_norm[k]);
+	//}
+	//printf("\n");
+
+	//printf("Original melvec :\n");
+	//for (uint8_t k = 0; k < MELVEC_LENGTH; k++){
+			//printf("%d ", melvec[k]);
+	//}
+	//printf("\n");
+
+	//printf("Our melvec :\n");
+	//for (uint8_t k = 0; k < MELVEC_LENGTH; k++){
+			//printf("%d ", our_melvec[k]);
+	//}
+	//printf("\n");
+
+
+
+	//free(our_melvec);
+	//free(buf_norm);
+	/////////////////////////////////////////////////////////////////////////////////
+
 
 //	int temp;
 //	for (int i=0; i < MELVEC_LENGTH; i++){
