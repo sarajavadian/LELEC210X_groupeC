@@ -17,35 +17,23 @@ const uint8_t AES_Key[16]  = {
 							0x00,0x00,0x00,0x00};
 
 void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
-	// Allocate a buffer of the key size to store the input and result of AES
+	// Allocate a buffer of the key size to store the result of AES
 	// uint32_t[4] is 4*(32/8)= 16 bytes long
-	uint32_t statew[4] = {0};
-	// state is a pointer to the start of the buffer
-	uint8_t *state = (uint8_t*) statew;
-    size_t i;
 
+	uint8_t result[16];
 
-    // TO DO : Complete the CBC-MAC_AES
+    size_t padd_len = msg_len % 16;
 
-	for (i = 0; i < msg_len-16; i +=16){
-		for(size_t j = 0; j < 16; j++){
-			*(state+j) = msg[i+j] ^ *(state+j);
-		}
-		AES128_encrypt(state, AES_Key);
-		HAL_CRYPEx_AES(&hcryp, state, 16, state, 1000);
-	}
-	for(size_t k = i; k < msg_len; k++){
-		*(state+k-i) = msg[k] ^ *(state+k-i);
-	}
-//	AES128_encrypt(state, AES_Key);
-	HAL_CRYPEx_AES(&hcryp, state, 16, state, 1000);
-
-
-    // Copy the result of CBC-MAC-AES to the tag.
-    for (int j=0; j<16; j++) {
-        tag[j] = state[j]; // memcpy is more efficient
+    if (padd_len != 0){
+    	uint8_t total_buff[msg_len + padd_len] = {0};
+    	memcpy(total_buf, msg, msg_len);
+    	HAL_CRYPEx_AES(&hcryp, total_buf, msg_len+padd_len, result, 1000);
     }
-    memcpy(tag, state, 16);
+    else{
+    	HAL_CRYPEx_AES(&hcryp, msg, msg_len, result, 1000);
+    }
+    memcpy(tag, result, 16);
+
 }
 
 // Assumes payload is already in place in the packet
