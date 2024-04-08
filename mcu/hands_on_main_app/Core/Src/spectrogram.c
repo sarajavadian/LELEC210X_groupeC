@@ -165,9 +165,9 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 //		}
 //	printf("\n-------------------SCALE_UP-------------------\n");
 
-//	start_cycle_count();
+	//start_cycle_count();
 	arm_shift_q15(buf, vmax_round-15, buf, SAMPLES_PER_MELVEC/2);
-//	stop_cycle_count("3.4");
+	//stop_cycle_count("3.4");
 
 	//stop_cycle_count("3.4");
 	// STEP 4:   Apply MEL transform
@@ -182,106 +182,51 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 
 	// /!\ In order to avoid overflows completely the input signals should be scaled down. Scale down one of the input matrices by log2(numColsA) bits to avoid overflows,
 	// as a total of numColsA additions are computed internally for each output element. Because our hz2mel_mat matrix contains lots of zeros in its rows, this is not necessary.
-	start_cycle_count();
-	arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
 
-	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
-	arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
-	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
+	//start_cycle_count();
+	//arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
 
-	arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
-	stop_cycle_count("Leur_calcul");
+	//arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
+	//arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
+	//arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
+
+	//arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
+	//stop_cycle_count("Leur_calcul");
 
 	///////////////////////// MULTIPLICATION IMPLEMENTATION /////////////////////////
 
-	//for (int i = 0; i < NB_LINE; i++){
-	    //     int j = start_idx[i];
-	    //     int l = length[i];
-
-	    //     result[i] = dot_product(matrix + i * NB_COL + j, vect + j, l);
-	    //     printf("%d\n", result[i]);
-	    // }
-
-	start_cycle_count();
+	//start_cycle_count();
 	q63_t result_temp[MELVEC_LENGTH];
-	q15_t our_melvec[MELVEC_LENGTH];
 
-	for (uint8_t i = 0; i < MELVEC_LENGTH; i++){
+	for (uint8_t i = 0; i < MELVEC_LENGTH; i++){  // pour chaque ligne de hz2mel_mat :
 		uint8_t j = start_idx[i];
 		uint8_t l = length[i];
+		// dot product entre le vecteur de chaque ligne et le vecteur buf
+		arm_dot_prod_q15(hz2mel_mat + i*SAMPLES_PER_MELVEC/2 + j, buf + j, l, result_temp + i); // résultat sur 64 bits
 
-		arm_dot_prod_q15(hz2mel_mat + i*SAMPLES_PER_MELVEC/2 + j, buf + j, l, result_temp + i);
-
-		//our_melvec[i] = (q15_t) (((result_temp[i] >> 33) << 33) << 15);
-		//our_melvec[i] = (q15_t) ( (result_temp[i]) / ((q63_t)1 << 47) );
-		//our_melvec[i] = ((result_temp[i]) >> 48);
-        q63_t sign = result_temp[i] & 0x8000000000000000;
-        q15_t temp = (q15_t) (result_temp[i] >> 15);
-        temp  = ((temp << 1) >> 1);
-        sign = (sign >> 48);
-        our_melvec[i] = temp | (q15_t) sign;
-
-
+        q63_t sign = (result_temp[i] & 0x8000000000000000) >> 48; // on récupère le bit de signe et on le met au 1er bit (sur 16)
+        q15_t temp = (q15_t) (result_temp[i] >> 15); // on remet le résultat sur 16 bits
+        temp  = ((temp << 1) >> 1); // on supprime le premier bit (bit bullshit)
+        melvec[i] = temp | (q15_t) sign; // on met le bit de signe au premier bit
 	}
-	stop_cycle_count("Our_calcul");
+	//stop_cycle_count("Our_calcul");
 
-	printf("Buffer :\n");
-	for (int k = 0; k < SAMPLES_PER_MELVEC/2; k++){
-		printf("%d  ", buf[k]);
-	}
-	printf("\n Our_melvec: \n");
-	for (int k = 0; k < MELVEC_LENGTH; k++){
-		printf("%d  ", our_melvec[k]);
-	}
-	printf("\n Original: \n");
-	for (int k = 0; k < MELVEC_LENGTH; k++){
-		printf("%d  ", melvec[k]);
-	}
-	printf("\n");
-
-
-	//q15_t *our_melvec = (q15_t *) calloc(MELVEC_LENGTH, sizeof(q15_t));
-	//q15_t *buf_norm = (q15_t *) malloc(SAMPLES_PER_MELVEC/2 * sizeof(q15_t));
-
-	// Normalisation de buf : on divise par log2(SAMPLES_PER_MELVEC/2) = 8 -> revient à shifter à droite de 3 bits
-	//arm_shift_q15(buf, -3, buf_norm, SAMPLES_PER_MELVEC/2);
-
-	//for (uint16_t k = 0; k < NB_ENTRIES; k++){
-		//uint8_t i = i_indexes[k];
-		//uint8_t j = j_indexes[k];
-		//our_melvec[i] += hz2mel_mat[i * SAMPLES_PER_MELVEC/2 + j] * buf_norm[j];
-	//}
-
-	//------- PRINT ----------
 
 	//printf("Buffer :\n");
-	//for (uint8_t k = 0; k < SAMPLES_PER_MELVEC/2; k++){
-		//printf("%d ", buf[k]);
+	//for (int k = 0; k < SAMPLES_PER_MELVEC/2; k++){
+		//printf("%d  ", buf[k]);
 	//}
-	//printf("\n");
-
-	//printf("Normalized buffer :\n");
-	//for (uint8_t k = 0; k < SAMPLES_PER_MELVEC/2; k++){
-		//printf("%d ", buf_norm[k]);
+	//printf("\n Our_melvec: \n");
+	//for (int k = 0; k < MELVEC_LENGTH; k++){
+		//printf("%d  ", our_melvec[k]);
 	//}
-	//printf("\n");
-
-	//printf("Original melvec :\n");
-	//for (uint8_t k = 0; k < MELVEC_LENGTH; k++){
-			//printf("%d ", melvec[k]);
-	//}
-	//printf("\n");
-
-	//printf("Our melvec :\n");
-	//for (uint8_t k = 0; k < MELVEC_LENGTH; k++){
-			//printf("%d ", our_melvec[k]);
+	//printf("\n Original: \n");
+	//for (int k = 0; k < MELVEC_LENGTH; k++){
+		//printf("%d  ", melvec[k]);
 	//}
 	//printf("\n");
 
 
-
-	//free(our_melvec);
-	//free(buf_norm);
 	/////////////////////////////////////////////////////////////////////////////////
 
 
