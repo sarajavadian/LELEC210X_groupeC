@@ -23,14 +23,19 @@ void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
 	uint8_t result[16];
 
     size_t padd_len = msg_len % 16;
+    size_t tot_len = msg_len + 16 - padd_len;
 
     if (padd_len != 0){
-    	uint8_t total_buff[msg_len + padd_len] = {0};
-    	memcpy(total_buf, msg, msg_len);
-    	HAL_CRYPEx_AES(&hcryp, total_buf, msg_len+padd_len, result, 1000);
+    	uint8_t total_buff[tot_len];
+    	memset(total_buff, 0, tot_len*sizeof(uint8_t));
+    	memcpy(total_buff, msg, msg_len);
+    	HAL_CRYPEx_AES(&hcryp, total_buff, tot_len, result, 1000);
     }
     else{
-    	HAL_CRYPEx_AES(&hcryp, msg, msg_len, result, 1000);
+    	uint8_t copy_buff[msg_len];
+    	memset(copy_buff, 0, msg_len*sizeof(uint8_t));
+    	memcpy(copy_buff, msg, msg_len);
+    	HAL_CRYPEx_AES(&hcryp, copy_buff, msg_len, result, 1000);
     }
     memcpy(tag, result, 16);
 
