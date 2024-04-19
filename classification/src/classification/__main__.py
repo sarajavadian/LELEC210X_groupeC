@@ -6,6 +6,8 @@ from typing import Optional
 
 import click
 
+import requests
+
 import common
 from auth import PRINT_PREFIX
 from common.env import load_dotenv
@@ -73,3 +75,13 @@ def main(
                 melvecs = melvecs.reshape((1, melvec_length*n_melvecs))
                 result = m.predict(melvecs)
                 print(result)
+
+
+                hostname = "https://lelec210x.sipr.ucl.ac.be"
+                #hostname = "http://localhost:5000"
+                key = "aqH27o66E8xz-IotBk11ZZo1ix7Vbs5H2pTXlSra"
+                guess = result
+
+                response = requests.post(f"{hostname}/lelec210x/leaderboard/submit/{key}/{guess}", timeout=1)
+
+
