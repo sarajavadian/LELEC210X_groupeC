@@ -14,9 +14,31 @@ from common.env import load_dotenv
 from common.logging import logger
 
 from .utils import payload_to_melvecs
+MEMORY_SIZE = 5
+WEIGHT_MEMO = 0.5
+WEIGHT_M1 = 1
+WEIGHT_M2 = 0
+THRESH_SOUND = 46000    #45794
+THRESH_PROBA = 0
+classnames = ["birds", "chainsaw","fire","handsaw","helicopter"]
 
 load_dotenv()
 
+def Averaging_FV(memo) :
+    av_prob = np.sum(memo, axis=0) / len(classnames)
+    idx = np.where(av_prob == np.max(av_prob))
+    return classnames[idx[0][0]], av_prob[idx[0][0]]
+
+def add_in_memory(m, idx, vp) :
+    if idx < MEMORY_SIZE :
+        m[idx] = vp
+        return idx+1
+    else:
+        for i in range (MEMORY_SIZE-1):
+            m[i] = m[i+1]
+        m[-1] = vp
+        return idx
+    
 
 @click.command()
 @click.option(
@@ -57,9 +79,18 @@ def main(
     """
     if model:
         with open(model, "rb") as file:
-            m = pickle.load(file)
+            m1 = pickle.load(file)
+            
+        model2 = model
+        with open(model2, "rb") as file:
+            m2 = pickle.load(file)
+            print("model 2 loaded")
     else:
-        m = None
+        m1 = None
+        
+    # init memoire
+    memory = np.zeros((MEMORY_SIZE,len(classnames)))
+    idx_empty = 0
 
     for payload in _input:
         if PRINT_PREFIX in payload:
@@ -68,20 +99,51 @@ def main(
             melvecs = payload_to_melvecs(payload, melvec_length, n_melvecs)
             logger.info(f"Parsed payload into Mel vectors: {melvecs}")
 
-            if m:
-                plot, ax = plt.subplots()
-                plot_specgram(melvecs, ax)
-                plt.show()
-                melvecs = melvecs.reshape((1, melvec_length*n_melvecs))
-                result = m.predict(melvecs)
-                print(result)
+            if m1:
+                #plot, ax = plt.subplots()
+                #plot_specgram(melvecs, ax)
+                #plt.show()
+                #melvecs = melvecs.reshape((1, melvec_length*n_melvecs))
+                #result = m.predict(melvecs)
+                #print(result)
 
+                
+                if np.linalg.norm(melvec) < THRESH_SOUND :
+                    print("No sound -> no classification")
+                    idx_empty = add_in_memory(memory, idx_empty, np.zeros((1,5)))
+    
+                else :
+                    melvec_normalized = melvec / np.linalg.norm(melvec)
+                    melvec_normalized = melvec_normalized.reshape((1, MELVEC_LENGTH*N_MELVECS))
+                    
+                    current_pred1 = m1.predict(melvec_normalized) # useless
+                    current_prob1 = m1.predict_proba(melvec_normalized)
+                    current_pred2 = m2.predict(melvec_normalized) # useless
+                    current_prob2 = m2.predict_proba(melvec_normalized)
+                    
+                    # combined classifiers
+                    combined_prob = WEIGHT_M1 * current_prob1[0] + WEIGHT_M2 * current_prob2[0]
+                    if max(combined_prob) > 1.0 : # useless
+                        print("WARNING: got a combined probability higher than 1")
+                    combined_pred = classnames[ np.argmax(combined_prob) ] # useless
+                    
+                    # memory
+                    tot_prob = np.concatenate( ( WEIGHT_MEMO * memory, combined_prob.reshape((1,5)) ) )
+                    prediction, proba = Averaging_FV(tot_prob)
 
-                hostname = "https://lelec210x.sipr.ucl.ac.be"
-                #hostname = "http://localhost:5000"
-                key = "aqH27o66E8xz-IotBk11ZZo1ix7Vbs5H2pTXlSra"
-                guess = result
+                    idx_empty = add_in_memory(memory, idx_empty, combined_prob)
+                    
+                                
+                    ########### AFFICHAGE ##########
+                    print(prediction)
+                    print()
+                    
 
-                response = requests.post(f"{hostname}/lelec210x/leaderboard/submit/{key}/{guess}", timeout=1)
+                    hostname = "https://lelec210x.sipr.ucl.ac.be"
+                    #hostname = "http://localhost:5000"
+                    key = "aqH27o66E8xz-IotBk11ZZo1ix7Vbs5H2pTXlSra"
+                    guess = prediction
+
+                    response = requests.post(f"{hostname}/lelec210x/leaderboard/submit/{key}/{guess}", timeout=1)
 
 
