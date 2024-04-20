@@ -20,7 +20,7 @@ void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
 	// Allocate a buffer of the key size to store the result of AES
 	// uint32_t[4] is 4*(32/8)= 16 bytes long
 
-	uint8_t result[16];
+	uint8_t result[msg_len + 16];
 
     size_t padd_len = msg_len % 16;
     size_t tot_len = msg_len + 16 - padd_len;
@@ -37,7 +37,9 @@ void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
     	memcpy(copy_buff, msg, msg_len);
     	HAL_CRYPEx_AES(&hcryp, copy_buff, msg_len, result, 1000);
     }
-    memcpy(tag, result, 16);
+    for (int j=0; j<16; j++){
+    	tag[j] = result[msg_len + j];
+    }
 
 }
 
