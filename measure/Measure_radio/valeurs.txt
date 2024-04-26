@@ -1,0 +1,7 @@
+-20dBm : 297 mV, 52.2 Ohm
+-15dBm : 323 mV ----- erreur de ~1% pour toutes les mesures
+-10dBm : 375 mV
+-5dBm  : 474 mV
+ 0dBm  : 606 mV
+ 5dBm  : 715 mV
+ 10dBm : 795 mV

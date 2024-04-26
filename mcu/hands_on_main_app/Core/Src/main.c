@@ -36,6 +36,7 @@
 #include "s2lp.h"
 #include "spectrogram.h"
 #include "eval_radio.h"
+#include "eval_specgram.h"
 #include "packet.h"
 #include "config.h"
 #include "utils.h"
@@ -190,6 +191,8 @@ int main(void)
   run();
 #elif (RUN_CONFIG == EVAL_RADIO)
   eval_radio();
+#elif (RUN_CONFIG == EVAL_SPECGRAM)
+  eval_spectrogram();
 #else
 #error "Wrong value for RUN_CONFIG."
 #endif
@@ -223,7 +226,7 @@ void SystemClock_Config(void)
   RCC_OscInitStruct.OscillatorType = RCC_OSCILLATORTYPE_MSI;
   RCC_OscInitStruct.MSIState = RCC_MSI_ON;
   RCC_OscInitStruct.MSICalibrationValue = 0;
-  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_10;
+  RCC_OscInitStruct.MSIClockRange = RCC_MSIRANGE_5;
   RCC_OscInitStruct.PLL.PLLState = RCC_PLL_NONE;
   if (HAL_RCC_OscConfig(&RCC_OscInitStruct) != HAL_OK)
   {
@@ -239,7 +242,7 @@ void SystemClock_Config(void)
   RCC_ClkInitStruct.APB1CLKDivider = RCC_HCLK_DIV1;
   RCC_ClkInitStruct.APB2CLKDivider = RCC_HCLK_DIV1;
 
-  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_1) != HAL_OK)
+  if (HAL_RCC_ClockConfig(&RCC_ClkInitStruct, FLASH_LATENCY_0) != HAL_OK)
   {
     Error_Handler();
   }

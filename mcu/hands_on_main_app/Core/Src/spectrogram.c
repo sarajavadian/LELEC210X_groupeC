@@ -34,9 +34,9 @@ void Spectrogram_Format(q15_t *in)
 
 	// /!\ When multiplying/dividing by a power 2, always prefer shifting left/right instead, ARM instructions to do so are more efficient.
 	// Here we should shift left by 3.
-
+	//start_cycle_count();
 	arm_shift_q15(in, 3, buf, SAMPLES_PER_MELVEC);
-
+	//stop_cycle_count("Fixed point scale");
 	// STEP 0.2 : Remove DC Component
 	//            --> Pointwise subtract
 	//            Complexity: O(N)
@@ -62,9 +62,9 @@ void Spectrogram_Format(q15_t *in)
 //	}
 //	printf("\n-------------------ARM_OFFSET-------------------\n");
 
-//	start_cycle_count();
+	//start_cycle_count();
 	arm_offset_q15(buf, -(1 << 14), buf, SAMPLES_PER_MELVEC);
-//	stop_cycle_count("0.2");
+	//stop_cycle_count("Remove DC");
 }
 
 // Compute spectrogram of samples and transform into MEL vectors.
@@ -74,7 +74,9 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	//           --> Pointwise product
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
+	//start_cycle_count();
 	arm_mult_q15(samples, hamming_window, buf, SAMPLES_PER_MELVEC);
+	//stop_cycle_count("Windowing");
 
 	// STEP 2  : Discrete Fourier Transform
 	//           --> In-place Fast Fourier Transform (FFT) on a real signal
@@ -83,11 +85,14 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	//           Number of cycles: <TODO>
 
 	// Since the FFT is a recursive algorithm, the values are rescaled in the function to ensure that overflow cannot happen.
+	//start_cycle_count();
+
 	arm_rfft_instance_q15 rfft_inst;
 
 	arm_rfft_init_q15(&rfft_inst, SAMPLES_PER_MELVEC, 0, 1);
 
 	arm_rfft_q15(&rfft_inst, buf, buf_fft);
+	//stop_cycle_count("FFT");
 
 	// STEP 3  : Compute the complex magnitude of the FFT
 	//           Because the FFT can output a great proportion of very small values,
@@ -97,18 +102,21 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	// STEP 3.1: Find the extremum value (maximum of absolute values)
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
+	//start_cycle_count();
 
 	q15_t vmax;
 	uint32_t pIndex=0;
 
 	arm_absmax_q15(buf_fft, SAMPLES_PER_MELVEC, &vmax, &pIndex); // is there a way to go faster ? Maybe directly output the log2 of vmax such that the loop below is not necessary
+	//stop_cycle_count("extremum");
+
 	// -> also check if this is really relevant to multiple by the max, precision-wise. If not much difference is seen, we could simplify the code by removing this part.
 	// STEP 3.2: Normalize the vector - Dynamic range increase
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
 
 	// code to get the highest power of 2 contained in vmax (to approximate vmax) (ex : 70 -> 64, 2047 -> 1024)
-//	start_cycle_count();
+	//start_cycle_count();
 	int vmax_round = -1;
 	for (int i=14; vmax_round == -1; i--){
 		if ((vmax >> i) & 1){
@@ -117,7 +125,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	}
 
 	arm_shift_q15(buf_fft, 15-vmax_round, buf, SAMPLES_PER_MELVEC); // There can be overflow so maybe -1 in the shift. But in that case, the approximation is way off.
-//	stop_cycle_count("3.2");
+	//stop_cycle_count("Normalize");
 
 //	------------------ TEST ------------------------
 //	for (int i=0; i < SAMPLES_PER_MELVEC; i++) // We don't use the second half of the symmetric spectrum
@@ -141,8 +149,10 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	//           --> The output buffer is now two times smaller because (real|imag) --> (mag)
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
+	//start_cycle_count();
 
 	arm_cmplx_mag_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
+	//stop_cycle_count("cmplx mag");
 
 	// STEP 3.4: Denormalize the vector
 	//           Complexity: O(N)
@@ -167,7 +177,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 
 	//start_cycle_count();
 	arm_shift_q15(buf, vmax_round-15, buf, SAMPLES_PER_MELVEC/2);
-	//stop_cycle_count("3.4");
+	//stop_cycle_count("Denormalize");
 
 	//stop_cycle_count("3.4");
 	// STEP 4:   Apply MEL transform

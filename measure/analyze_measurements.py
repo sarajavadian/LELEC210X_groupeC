@@ -1,8 +1,8 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import scipy
+import scipy.integrate
 
-file = "TAG_shortened/4MHz_Tag-2.1-14.5.csv"
+file = "Measure_radio/radio_-15dBm-2-52.2.csv"
 
 R = float(file.split("-")[2][:-4]) #value of the used resistance
 V_sup = float(file.split("-")[1]) #value of the supplied voltage
@@ -28,12 +28,12 @@ Y *= 1000 # in mW instead of W
 print("min : " + str(np.min(Y)) + " mW")
 print("min : " + str(1e3 * np.min(I)) + " mA")
 
-a, b = 0, nbr_samples # boundaries between which a unique cycle appears
+a, b = 4400, 5860 # boundaries between which a unique cycle appears
 X, Y = X[a:b], Y[a:b]
 avg_pwr = np.mean(Y)
 print("Average power : {0} mW".format(avg_pwr))
 print("Average current : {0} mA".format(1e3*np.mean(I)))
-#print("Energy consumption : {0} mW*s".format(scipy.integrate.simps(Y, X)))
+print("Energy consumption : {0} mW*s".format(scipy.integrate.simps(Y, X)))
 #print("Energy consumption : {0} µW*h".format(scipy.integrate.simps(Y, X)*1000/3600))
 
 plt.plot(X, Y) 
@@ -41,5 +41,5 @@ plt.ylim((0, np.max(Y)*1.1))
 plt.ylabel("Power consumed [mW]")
 plt.xlabel("Time [s]")
 plt.title(file.split("-")[0].split("/")[-1].replace("_", " "))
-plt.savefig("Graph_power_consumption.jpg")
+plt.savefig(file.split("-")[0].split("/")[-1].replace("_", " ") + ".pdf")
 plt.show()
