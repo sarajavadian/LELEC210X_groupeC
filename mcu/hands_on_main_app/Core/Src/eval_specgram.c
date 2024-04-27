@@ -11,10 +11,8 @@
 #include "config.h"
 #include "utils.h"
 #include "arm_absmax_q15.h"
+#include "data.h"
 
-#define FILE_PATH "test_buf.txt"
-
-q15_t readlines [SAMPLES_PER_MELVEC];
 
 q15_t spec_buf    [  SAMPLES_PER_MELVEC  ]; // Windowed samples
 q15_t fftbuf [2*SAMPLES_PER_MELVEC  ]; // Double size (real|imag) buffer needed for arm_rfft_q15
@@ -24,22 +22,75 @@ q15_t melvectors_before [N_MELVECS][MELVEC_LENGTH];
 q15_t melvectors_after [N_MELVECS][MELVEC_LENGTH];
 
 
-FILE* raw_data;
+/**
+ * @brief Extracts numbers from a string separated by "_ " delimiter.
+ *
+ * This function extracts numbers from the input string `data_processed`, which contains
+ * numbers separated by "_ " delimiter. It parses the string character by
+ * character, converting sequences of digits into integer numbers and storing
+ * them in the `numbers` array. The function stops when it encounters the end
+ * of the string, reaches the maximum number of numbers specified by
+ * `MAX_NUMBERS`, or when it cannot parse any more numbers.
+ *
+ * @param data_processed Pointer to the input string containing numbers separated by "_ " delimiter.
+ * @param numbers Pointer to the array where extracted numbers will be stored.
+ * @param count Pointer to an integer variable to store the number of numbers extracted.
+ * @note The `numbers` array should have sufficient space to store the extracted numbers.
+ * @note The function does not handle overflow or other error conditions during number parsing.
+ * THANKS CHATGPT
+ */
+void extractNumbers(const char *data_processed, q15_t *numbers, int *count) {
+    *count = 0;  // Initialize count to 0
+    int num = 0;
+    int isNumNegative = 0;
+
+    while (*data_processed != '\0') {
+        // Skip leading whitespace
+        while (*data_processed == ' ') {
+            data_processed++;
+        }
+
+        // Check if the character is a digit or a negative sign
+        if ((*data_processed >= '0' && *data_processed <= '9') || *data_processed == '-') {
+            // If it's a negative sign, mark that the number is negative
+            if (*data_processed == '-') {
+                isNumNegative = 1;
+            } else {
+                // Update the current number
+                num = num * 10 + (*data_processed - '0');
+            }
+        } else if (*data_processed == '_' && *(data_processed + 1) == ' ') { // Delimiter found
+            // Store the number in the array with appropriate sign
+            numbers[*count] = (isNumNegative) ? -num : num;
+            (*count)++;  // Increment count
+            num = 0;  // Reset num for next number
+            isNumNegative = 0; // Reset sign for next number
+        }
+        data_processed++;  // Move to the next character
+    }
+}
+
 
 void eval_spectrogram(void)
 {
-	raw_data = fopen(FILE_PATH, "r");
-
 	// PRINT data
 	/////////////////////////////////////////////////////////////////
 	// Version 1
+	q15_t* melvec = malloc(sizeof(q15_t)* (N_MELVECS*SAMPLES_PER_MELVEC));
+	int* nbr_data = malloc(sizeof(int));
+
+	extractNumbers(data, melvec, nbr_data);
+
+	if (*nbr_data != N_MELVECS*SAMPLES_PER_MELVEC){
+		printf("ERROR : only %d numbers extracted instead of %d", *nbr_data, N_MELVECS*SAMPLES_PER_MELVEC);
+	}
+
+	free(nbr_data);
 
 	for (uint8_t curmelvec = 0; curmelvec < N_MELVECS; curmelvec++){
-		fread(readlines, sizeof(q15_t), SAMPLES_PER_MELVEC, raw_data);
-		// transform data in q15_t *
 
 		// Shift
-		arm_shift_q15(readlines, 3, spec_buf, SAMPLES_PER_MELVEC);
+		arm_shift_q15(melvec + curmelvec*SAMPLES_PER_MELVEC, 3, spec_buf, SAMPLES_PER_MELVEC);
 
 		// Remove DC-comp
 		for(uint16_t i=0; i < SAMPLES_PER_MELVEC; i++) { // Remove DC component
@@ -88,9 +139,8 @@ void eval_spectrogram(void)
 		//////////////////////////////////////////////////////////////////////////////////////
 		// Version 2
 
-		Spectrogram_Format(readlines);
-		Spectrogram_Compute(readlines, melvectors_after[curmelvec]);
-
+		Spectrogram_Format(melvec + curmelvec * SAMPLES_PER_MELVEC);
+		Spectrogram_Compute(melvec + curmelvec * SAMPLES_PER_MELVEC, melvectors_after[curmelvec]);
 	}
 
 #if (DEBUGP == 1)
@@ -112,5 +162,6 @@ void eval_spectrogram(void)
 	}
 #endif
 
+free(melvec);
 
 }
