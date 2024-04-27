@@ -52,7 +52,7 @@ static void print_spectrogram(void) {
 #endif
 }
 
-static void print_encoded_packet(uint8_t *packet) {
+void print_encoded_packet(uint8_t *packet) {
 #if (DEBUGP == 1)
 	char hex_encoded_packet[2*PACKET_LENGTH+1];
 	hex_encode(hex_encoded_packet, packet, PACKET_LENGTH);
@@ -60,7 +60,7 @@ static void print_encoded_packet(uint8_t *packet) {
 #endif
 }
 
-static void encode_packet(uint8_t *packet, uint32_t* packet_cnt) {
+void encode_packet(uint8_t *packet, uint32_t* packet_cnt) {
 	// BE encoding of each mel coef
 	for (size_t i=0; i<N_MELVECS; i++) { // 20
 		for (size_t j=0; j<MELVEC_LENGTH; j++) { // 20

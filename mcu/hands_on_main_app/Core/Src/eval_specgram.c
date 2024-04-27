@@ -12,6 +12,8 @@
 #include "utils.h"
 #include "arm_absmax_q15.h"
 #include "data.h"
+#include "packet.h"
+#include "adc_dblbuf.h"
 
 
 q15_t spec_buf    [  SAMPLES_PER_MELVEC  ]; // Windowed samples
@@ -21,6 +23,8 @@ q15_t mult_buf[  SAMPLES_PER_MELVEC/2]; // Intermediate buffer for arm_mat_mult_
 q15_t melvectors_before [N_MELVECS][MELVEC_LENGTH];
 q15_t melvectors_after [N_MELVECS][MELVEC_LENGTH];
 
+static uint32_t packet_cnt = 0;
+uint8_t packet[PACKET_LENGTH];
 
 /**
  * @brief Extracts numbers from a string separated by "_ " delimiter.
@@ -39,6 +43,7 @@ q15_t melvectors_after [N_MELVECS][MELVEC_LENGTH];
  * @note The function does not handle overflow or other error conditions during number parsing.
  * THANKS CHATGPT
  */
+
 void extractNumbers(const char *data_processed, q15_t *numbers, int *count) {
     *count = 0;  // Initialize count to 0
     int num = 0;
@@ -152,14 +157,16 @@ void eval_spectrogram(void)
 		}
 		DEBUG_PRINT("\r\n");
 	}
-	DEBUG_PRINT("FVs of the second spectrogram\r\n");
-	for(unsigned int j=0; j < N_MELVECS; j++) {
-		DEBUG_PRINT("FV #%u:\t", j+1);
-		for(unsigned int i=0; i < MELVEC_LENGTH; i++) {
-			DEBUG_PRINT("%.2f, ", q15_to_float(melvectors_after[j][i]));
-		}
-		DEBUG_PRINT("\r\n");
-	}
+	encode_packet(packet, &packet_cnt);
+	print_encoded_packet(packet);
+//	DEBUG_PRINT("FVs of the second spectrogram\r\n");
+//	for(unsigned int j=0; j < N_MELVECS; j++) {
+//		DEBUG_PRINT("FV #%u:\t", j+1);
+//		for(unsigned int i=0; i < MELVEC_LENGTH; i++) {
+//			DEBUG_PRINT("%.2f, ", q15_to_float(melvectors_after[j][i]));
+//		}
+//		DEBUG_PRINT("\r\n");
+//	}
 #endif
 
 free(melvec);

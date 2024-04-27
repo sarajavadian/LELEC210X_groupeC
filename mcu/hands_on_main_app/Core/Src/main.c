@@ -187,7 +187,16 @@ int main(void)
 #elif (RUN_CONFIG == EVAL_RADIO)
   eval_radio();
 #elif (RUN_CONFIG == EVAL_SPECGRAM)
+#if CONTINUOUS_ACQ
   eval_spectrogram();
+#else
+  while(1){
+	  if (btn_press){
+		  eval_spectrogram();
+		  btn_press = 0;
+	  }
+  }
+#endif
 #else
 #error "Wrong value for RUN_CONFIG."
 #endif
