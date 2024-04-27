@@ -98,19 +98,19 @@ static void ADC_Callback(int buf_cplt) {
 		DEBUG_PRINT("Error: ADC Data buffer full\r\n");
 		Error_Handler();
 	}
-#if (DEBUGP == 1)
-	DEBUG_PRINT("Buffer number %u", cur_melvec);
-	for (uint16_t elem = 0; elem < ADC_BUF_SIZE; elem++){
-		DEBUG_PRINT(" %u_", ADCData[buf_cplt][elem]);
-	}
-	DEBUG_PRINT("End buffer\r\n");
-#endif
+//#if (DEBUGP == 1)
+//	DEBUG_PRINT("Buffer number %u", cur_melvec);
+//	for (uint16_t elem = 0; elem < ADC_BUF_SIZE; elem++){
+//		DEBUG_PRINT(" %u_", ADCData[buf_cplt][elem]);
+//	}
+//	DEBUG_PRINT("End buffer\r\n");
+//#endif
 	ADCDataRdy[buf_cplt] = 1;
-	//start_cycle_count();
+	start_cycle_count();
 	Spectrogram_Format((q15_t *)ADCData[buf_cplt]);
 	Spectrogram_Compute((q15_t *)ADCData[buf_cplt], mel_vectors[cur_melvec]);
 	cur_melvec++;
-	//stop_cycle_count("spectrogram : total number of cycles");
+	stop_cycle_count("spectrogram : total number of cycles");
 	ADCDataRdy[buf_cplt] = 0;
 
 	if (rem_n_bufs == 0) {

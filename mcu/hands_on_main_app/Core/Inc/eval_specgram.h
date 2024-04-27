@@ -5,8 +5,6 @@
 #ifndef INC_EVAL_SPECGRAM_H_
 #define INC_EVAL_SPECGRAM_H_
 
-#define FILE_PATH "ex.txt"
-
 void eval_spectrogram(void);
 
 

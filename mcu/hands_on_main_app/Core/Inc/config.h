@@ -12,17 +12,17 @@
 #define EVAL_RADIO 1
 #define EVAL_SPECGRAM 2
 
-#define RUN_CONFIG MAIN_APP
+#define RUN_CONFIG EVAL_SPECGRAM
 
 // Radio parameters
 #define ENABLE_RADIO 1
 
 // General UART enable/disable (disable for low-power operation)
-#define ENABLE_UART 0
+#define ENABLE_UART 1
 
 // In continuous mode, we start and stop continuous acquisition on button press.
 // In non-continuous mode, we send a single packet on button press.
-#define CONTINUOUS_ACQ 1
+#define CONTINUOUS_ACQ 0
 
 // Spectrogram parameters
 #define SAMPLES_PER_MELVEC 512
@@ -30,10 +30,10 @@
 #define N_MELVECS 20
 
 // Enable performance measurements
-#define PERF_COUNT 0
+#define PERF_COUNT 1
 
 // Enable debug print
-#define DEBUGP 0
+#define DEBUGP 1
 
 #if (DEBUGP == 1)
 #define DEBUG_PRINT(...) do{ printf(__VA_ARGS__ ); } while( 0 )

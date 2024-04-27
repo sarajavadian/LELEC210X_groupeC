@@ -151,7 +151,58 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	//           Number of cycles: <TODO>
 	//start_cycle_count();
 
-	arm_cmplx_mag_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
+//	memcpy(buf_test, buf, SAMPLES_PER_MELVEC);
+//	printf("---------------BEFORE---------------\n");
+//	for (int i=0; i<40;i++){
+//		printf("%d|", buf[i]);
+//	}
+//	printf("\n----------------------------------------\n");
+//	start_cycle_count();
+	arm_cmplx_mag_squared_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
+
+//	stop_cycle_count("complex mag\n");
+//	printf("---------------AFTER---------------\n");
+////	for (int i=0; i<20; i++){
+////		printf("%d|", buf_test_2[i]);
+////	}
+////	printf("\n---------------END---------------\n");
+//	start_cycle_count();
+//	uint32_t blkCnt;                               /* Loop counter */
+//
+//	q15_t real, imag;                              /* Temporary input variables */
+//
+//	q15_t* pSrc = buf_test;
+//	q15_t* pDst = buf_test;
+//	/* Accumulators */
+//
+//  /* Initialize blkCnt with number of samples */
+//  blkCnt = SAMPLES_PER_MELVEC/2;
+//  while (blkCnt > 0U)
+//  {
+////	  printf("good value : %d\n", buf[i]);
+//	  real = *pSrc++;
+//	  imag = *pSrc++;
+//	  real = real > 0? real : (q15_t)__QSUB16(0, real);
+//	  imag = imag > 0? imag : (q15_t)__QSUB16(0, imag);
+////	  printf("real value : %d\n", real);
+////	  printf("imag value : %d\n", imag);
+//
+//	/* store result in 2.14 format in destination buffer. */
+//	*pDst = (q15_t)__QSUB16(real, imag) > 0 ? real + (imag>>2) : imag + (real>>2);
+////	printf("approx value : %d\n", *pDst);
+//	pDst++;
+////	i++;
+//	// other question to ask : if shift right, should we remove the sign bit before and add it after ?
+//	/* Decrement loop counter */
+//	blkCnt--;
+//  }
+//	stop_cycle_count("New complex mag");
+//	printf("---------------AFTER MY FUNCTION---------------\n");
+//	for (int i=0; i<20; i++){
+//		printf("%d|", buf_test[i]);
+//	}
+//	printf("\n---------------END---------------\n");
+
 	//stop_cycle_count("cmplx mag");
 
 	// STEP 3.4: Denormalize the vector

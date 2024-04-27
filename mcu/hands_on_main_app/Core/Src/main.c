@@ -90,30 +90,24 @@ static void acquire_and_send_packet() {
 		DEBUG_PRINT("Error while enabling the DMA\r\n");
 	}
 	while (!IsADCFinished()) {
+		FLASH->ACR |= (1 << 14);
 		__WFI();
+		FLASH->ACR &= ~(1 << 14);
 	}
 }
 
 void run(void)
 {
-	btn_press = 0;
 
 	while (1)
 	{
-	  while (!btn_press) {
-		  HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_SET);
-		  HAL_Delay(200);
-		  HAL_GPIO_WritePin(GPIOB, LD2_Pin, GPIO_PIN_RESET);
-		  HAL_Delay(200);
-	  }
-	  btn_press = 0;
 #if (CONTINUOUS_ACQ == 1)
-	  while (!btn_press) {
-		  acquire_and_send_packet();
-	  }
-	  btn_press = 0;
+		acquire_and_send_packet();
 #elif (CONTINUOUS_ACQ == 0)
+	if (btn_press){
 	  acquire_and_send_packet();
+	  btn_press = 0;
+	}
 #else
 #error "Wrong value for CONTINUOUS_ACQ."
 #endif
@@ -147,6 +141,7 @@ int main(void)
   /* USER CODE BEGIN SysInit */
   RCC->AHB1SMENR &= ~(1 << 9); // deactivate SRAM1 (has to be after the RCC is initialized) (SystemClock_Config() initialized it)
   PWR->CR1 |= (1 << 14); // set the low power run bit (LPR)
+  HAL_DBGMCU_DisableDBGStopMode();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */
@@ -215,7 +210,7 @@ void SystemClock_Config(void)
 
   /** Configure the main internal regulator output voltage
   */
-  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE1) != HAL_OK)
+  if (HAL_PWREx_ControlVoltageScaling(PWR_REGULATOR_VOLTAGE_SCALE2) != HAL_OK)
   {
     Error_Handler();
   }
