@@ -10,6 +10,7 @@
 #include "spectrogram_tables.h"
 #include "config.h"
 #include "utils.h"
+#include "arm_absmax_q15.h"
 
 #define FILE_PATH "test_buf.txt"
 
