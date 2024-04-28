@@ -126,7 +126,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 		}
 	}
 //
-	arm_shift_q15(buf_fft, 15-vmax_round, buf, SAMPLES_PER_MELVEC); // There can be overflow so maybe -1 in the shift. But in that case, the approximation is way off.
+	arm_shift_q15(buf_fft, 15-vmax_round-1, buf, SAMPLES_PER_MELVEC); // There can be overflow so maybe -1 in the shift. But in that case, the approximation is way off.
 	//stop_cycle_count("Normalize");
 
 //	------------------ TEST ------------------------
@@ -161,7 +161,6 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 //	printf("\n----------------------------------------\n");
 //	start_cycle_count();
 	arm_cmplx_mag_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
-
 //	stop_cycle_count("complex mag\n");
 //	printf("---------------AFTER---------------\n");
 ////	for (int i=0; i<20; i++){
@@ -229,7 +228,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 //	printf("\n-------------------SCALE_UP-------------------\n");
 
 	//start_cycle_count();
-	arm_shift_q15(buf, vmax_round-15, buf, SAMPLES_PER_MELVEC/2);
+	arm_shift_q15(buf, vmax_round-15+1, buf, SAMPLES_PER_MELVEC/2);
 	//stop_cycle_count("Denormalize");
 
 	//stop_cycle_count("3.4");

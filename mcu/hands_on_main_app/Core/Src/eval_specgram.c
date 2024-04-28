@@ -86,7 +86,7 @@ void eval_spectrogram(void)
 	q15_t* melvec = malloc(sizeof(q15_t)* (N_MELVECS*SAMPLES_PER_MELVEC));
 	int* nbr_data = malloc(sizeof(int));
 
-	extractNumbers(data, melvec, nbr_data); // extract the values from the test dataset
+	extractNumbers(data_white_noise, melvec, nbr_data); // extract the values from the test dataset
 
 	if (*nbr_data != N_MELVECS*SAMPLES_PER_MELVEC){ // check if everything has been read
 		printf("ERROR : only %d numbers extracted instead of %d", *nbr_data, N_MELVECS*SAMPLES_PER_MELVEC);
