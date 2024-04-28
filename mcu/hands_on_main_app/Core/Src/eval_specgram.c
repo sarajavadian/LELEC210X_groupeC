@@ -15,6 +15,8 @@
 #include "packet.h"
 #include "adc_dblbuf.h"
 
+#define FIRST 1 // used to display one or the other spectrogram (can be both set)
+#define SECOND 0
 
 q15_t spec_buf    [  SAMPLES_PER_MELVEC  ]; // Windowed samples
 q15_t fftbuf [2*SAMPLES_PER_MELVEC  ]; // Double size (real|imag) buffer needed for arm_rfft_q15
@@ -23,7 +25,7 @@ q15_t mult_buf[  SAMPLES_PER_MELVEC/2]; // Intermediate buffer for arm_mat_mult_
 q15_t melvectors_before [N_MELVECS][MELVEC_LENGTH];
 q15_t melvectors_after [N_MELVECS][MELVEC_LENGTH];
 
-static uint32_t packet_cnt = 0;
+static uint32_t packet_cnt;
 uint8_t packet[PACKET_LENGTH];
 
 /**
@@ -84,9 +86,9 @@ void eval_spectrogram(void)
 	q15_t* melvec = malloc(sizeof(q15_t)* (N_MELVECS*SAMPLES_PER_MELVEC));
 	int* nbr_data = malloc(sizeof(int));
 
-	extractNumbers(data, melvec, nbr_data);
+	extractNumbers(data, melvec, nbr_data); // extract the values from the test dataset
 
-	if (*nbr_data != N_MELVECS*SAMPLES_PER_MELVEC){
+	if (*nbr_data != N_MELVECS*SAMPLES_PER_MELVEC){ // check if everything has been read
 		printf("ERROR : only %d numbers extracted instead of %d", *nbr_data, N_MELVECS*SAMPLES_PER_MELVEC);
 	}
 
@@ -121,7 +123,11 @@ void eval_spectrogram(void)
 			spec_buf[i] = (q15_t) (((q31_t) fftbuf[i] << 15) /((q31_t)vmax));
 		}
 
-
+//		if (curmelvec==0){
+//					for (int i=0; i < SAMPLES_PER_MELVEC/2; i++){
+//						printf("%d|" ,(spec_buf[i]));
+//					} // to print out the intermediate value
+//				}
 		//Magnitude
 		arm_cmplx_mag_q15(spec_buf, spec_buf, SAMPLES_PER_MELVEC/2);
 
@@ -131,6 +137,8 @@ void eval_spectrogram(void)
 		{
 			spec_buf[i] = (q15_t) ((((q31_t) spec_buf[i]) * ((q31_t) vmax) ) >> 15 );
 		}
+
+
 
 		// MEL transform
 		arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
@@ -148,6 +156,7 @@ void eval_spectrogram(void)
 		Spectrogram_Compute(melvec + curmelvec * SAMPLES_PER_MELVEC, melvectors_after[curmelvec]);
 	}
 
+#if (FIRST)
 #if (DEBUGP == 1)
 	DEBUG_PRINT("FVs of the first spectrogram\r\n");
 	for(unsigned int j=0; j < N_MELVECS; j++) {
@@ -157,16 +166,48 @@ void eval_spectrogram(void)
 		}
 		DEBUG_PRINT("\r\n");
 	}
-	encode_packet(packet, &packet_cnt);
+	for (size_t i=0; i<N_MELVECS; i++) { // 20 // This is the function "encode_packet" which I copy-pasted to change "melvectors_before"
+			for (size_t j=0; j<MELVEC_LENGTH; j++) { // 20
+				(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2]   = melvectors_before[i][j] >> 8;
+				(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2+1] = melvectors_before[i][j] & 0xFF;
+			}
+		}
+		// Write header and tag into the packet.
+		make_packet(packet, PAYLOAD_LENGTH, 0, packet_cnt);
+		packet_cnt++;
+		if (packet_cnt == 0) {
+			// Should not happen as packet_cnt is 32-bit and we send at most 1 packet per second.
+			DEBUG_PRINT("Packet counter overflow.\r\n");
+			Error_Handler();
+		}
+	print_encoded_packet(packet); // the packet was solely created to call this function, which allows the plot of the spectrogram on python's end to be printed.
+#endif
+
+#if (SECOND)
+	DEBUG_PRINT("FVs of the second spectrogram\r\n");
+	for(unsigned int j=0; j < N_MELVECS; j++) {
+		DEBUG_PRINT("FV #%u:\t", j+1);
+		for(unsigned int i=0; i < MELVEC_LENGTH; i++) {
+			DEBUG_PRINT("%.2f, ", q15_to_float(melvectors_after[j][i]));
+		}
+		DEBUG_PRINT("\r\n");
+	}
+	for (size_t i=0; i<N_MELVECS; i++) { // 20
+			for (size_t j=0; j<MELVEC_LENGTH; j++) { // 20
+				(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2]   = melvectors_after[i][j] >> 8;
+				(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2+1] = melvectors_after[i][j] & 0xFF;
+			}
+		}
+		// Write header and tag into the packet.
+		make_packet(packet, PAYLOAD_LENGTH, 0, packet_cnt);
+		packet_cnt++;
+		if (packet_cnt == 0) {
+			// Should not happen as packet_cnt is 32-bit and we send at most 1 packet per second.
+			DEBUG_PRINT("Packet counter overflow.\r\n");
+			Error_Handler();
+		}
 	print_encoded_packet(packet);
-//	DEBUG_PRINT("FVs of the second spectrogram\r\n");
-//	for(unsigned int j=0; j < N_MELVECS; j++) {
-//		DEBUG_PRINT("FV #%u:\t", j+1);
-//		for(unsigned int i=0; i < MELVEC_LENGTH; i++) {
-//			DEBUG_PRINT("%.2f, ", q15_to_float(melvectors_after[j][i]));
-//		}
-//		DEBUG_PRINT("\r\n");
-//	}
+#endif
 #endif
 
 free(melvec);

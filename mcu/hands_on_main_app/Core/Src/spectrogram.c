@@ -158,7 +158,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 //	}
 //	printf("\n----------------------------------------\n");
 //	start_cycle_count();
-	arm_cmplx_mag_squared_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
+	arm_cmplx_mag_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
 
 //	stop_cycle_count("complex mag\n");
 //	printf("---------------AFTER---------------\n");
