@@ -132,10 +132,11 @@ if __name__ == "__main__":
                 melvec[:-12].reshape((N_MELVECS, MELVEC_LENGTH)).T,
                 ax=plt.gca(),
                 is_mel=True,
-                title=f"MEL Spectrogram #{msg_counter}",
+                title="Our implementation",
                 xlabel="Mel vector",
             )
             plt.draw()
             plt.pause(0.001)
+            plt.savefig("Our_implementation.pdf")
             plt.clf()
             

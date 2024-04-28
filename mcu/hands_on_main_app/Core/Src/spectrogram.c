@@ -21,7 +21,7 @@ q15_t buf_test    [  SAMPLES_PER_MELVEC  ]; // Windowed samples -> testing buffe
 q15_t buf_test_2    [  SAMPLES_PER_MELVEC  ]; // Windowed samples -> testing buffer
 
 // Convert 12-bit DC ADC samples to Q1.15 fixed point signal and remove DC component
-void Spectrogram_Format(q15_t *in)
+void Spectrogram_Format(q15_t *buf)
 {
 	// STEP 0.1 : Increase fixed-point scale
 	//            --> Pointwise shift
@@ -35,7 +35,7 @@ void Spectrogram_Format(q15_t *in)
 	// /!\ When multiplying/dividing by a power 2, always prefer shifting left/right instead, ARM instructions to do so are more efficient.
 	// Here we should shift left by 3.
 	//start_cycle_count();
-	arm_shift_q15(in, 3, buf, SAMPLES_PER_MELVEC);
+	arm_shift_q15(buf, 3, buf, SAMPLES_PER_MELVEC);
 	//stop_cycle_count("Fixed point scale");
 	// STEP 0.2 : Remove DC Component
 	//            --> Pointwise subtract
@@ -75,7 +75,9 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
 	//start_cycle_count();
+
 	arm_mult_q15(samples, hamming_window, buf, SAMPLES_PER_MELVEC);
+
 	//stop_cycle_count("Windowing");
 
 	// STEP 2  : Discrete Fourier Transform
@@ -123,7 +125,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 			vmax_round = i;
 		}
 	}
-
+//
 	arm_shift_q15(buf_fft, 15-vmax_round, buf, SAMPLES_PER_MELVEC); // There can be overflow so maybe -1 in the shift. But in that case, the approximation is way off.
 	//stop_cycle_count("Normalize");
 
@@ -245,13 +247,13 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	// as a total of numColsA additions are computed internally for each output element. Because our hz2mel_mat matrix contains lots of zeros in its rows, this is not necessary.
 
 	//start_cycle_count();
-	//arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
-
-	//arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
-	//arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
-	//arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
-
-	//arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
+//	arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
+//
+//	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
+//	arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
+//	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
+//
+//	arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
 	//stop_cycle_count("Leur_calcul");
 
 	///////////////////////// MULTIPLICATION IMPLEMENTATION /////////////////////////

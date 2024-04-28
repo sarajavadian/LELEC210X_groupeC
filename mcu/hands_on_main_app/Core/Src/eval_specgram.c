@@ -15,8 +15,8 @@
 #include "packet.h"
 #include "adc_dblbuf.h"
 
-#define FIRST 1 // used to display one or the other spectrogram (can be both set)
-#define SECOND 0
+#define FIRST 0 // used to display one or the other spectrogram (can be both set)
+#define SECOND 1
 
 q15_t spec_buf    [  SAMPLES_PER_MELVEC  ]; // Windowed samples
 q15_t fftbuf [2*SAMPLES_PER_MELVEC  ]; // Double size (real|imag) buffer needed for arm_rfft_q15
@@ -103,10 +103,14 @@ void eval_spectrogram(void)
 		for(uint16_t i=0; i < SAMPLES_PER_MELVEC; i++) { // Remove DC component
 			spec_buf[i] -= (1 << 14);
 		}
-
 		// Windowing
 		arm_mult_q15(spec_buf, hamming_window, spec_buf, SAMPLES_PER_MELVEC);
-
+//		if (curmelvec==0){
+//			for (int i=0; i < 20; i++){
+//				printf("%d|", (spec_buf[i]));
+//			} // to print out the intermediate value
+//			printf("END\n");
+//		}
 		//FFT
 		arm_rfft_instance_q15 rfft_inst;
 		arm_rfft_init_q15(&rfft_inst, SAMPLES_PER_MELVEC, 0, 1);
@@ -123,11 +127,6 @@ void eval_spectrogram(void)
 			spec_buf[i] = (q15_t) (((q31_t) fftbuf[i] << 15) /((q31_t)vmax));
 		}
 
-//		if (curmelvec==0){
-//					for (int i=0; i < SAMPLES_PER_MELVEC/2; i++){
-//						printf("%d|" ,(spec_buf[i]));
-//					} // to print out the intermediate value
-//				}
 		//Magnitude
 		arm_cmplx_mag_q15(spec_buf, spec_buf, SAMPLES_PER_MELVEC/2);
 
@@ -156,8 +155,8 @@ void eval_spectrogram(void)
 		Spectrogram_Compute(melvec + curmelvec * SAMPLES_PER_MELVEC, melvectors_after[curmelvec]);
 	}
 
-#if (FIRST)
 #if (DEBUGP == 1)
+#if (FIRST)
 	DEBUG_PRINT("FVs of the first spectrogram\r\n");
 	for(unsigned int j=0; j < N_MELVECS; j++) {
 		DEBUG_PRINT("FV #%u:\t", j+1);
@@ -180,7 +179,7 @@ void eval_spectrogram(void)
 			DEBUG_PRINT("Packet counter overflow.\r\n");
 			Error_Handler();
 		}
-	print_encoded_packet(packet); // the packet was solely created to call this function, which allows the plot of the spectrogram on python's end to be printed.
+	print_encoded_packet(packet); // the packet was solely created to call this function, which allows the plot of the spectrogram on python's end.
 #endif
 
 #if (SECOND)
