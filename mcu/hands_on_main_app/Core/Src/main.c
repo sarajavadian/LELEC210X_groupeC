@@ -90,9 +90,9 @@ static void acquire_and_send_packet() {
 		DEBUG_PRINT("Error while enabling the DMA\r\n");
 	}
 	while (!IsADCFinished()) {
-		FLASH->ACR |= (1 << 14);
+//		FLASH->ACR |= (1 << 14);
 		__WFI();
-		FLASH->ACR &= ~(1 << 14);
+//		FLASH->ACR &= ~(1 << 14);
 	}
 }
 
@@ -141,7 +141,7 @@ int main(void)
   /* USER CODE BEGIN SysInit */
   RCC->AHB1SMENR &= ~(1 << 9); // deactivate SRAM1 (has to be after the RCC is initialized) (SystemClock_Config() initialized it)
   PWR->CR1 |= (1 << 14); // set the low power run bit (LPR)
-  HAL_DBGMCU_DisableDBGStopMode();
+//  HAL_DBGMCU_DisableDBGStopMode();
   /* USER CODE END SysInit */
 
   /* Initialize all configured peripherals */

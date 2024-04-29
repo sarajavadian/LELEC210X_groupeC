@@ -13,6 +13,7 @@
 #include "config.h"
 #include "utils.h"
 #include "arm_absmax_q15.h"
+#include "arm_cmplx_mag_fast_q15.h"
 
 q15_t buf    [  SAMPLES_PER_MELVEC  ]; // Windowed samples
 q15_t buf_fft[2*SAMPLES_PER_MELVEC  ]; // Double size (real|imag) buffer needed for arm_rfft_q15
@@ -119,6 +120,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 
 	// code to get the highest power of 2 contained in vmax (to approximate vmax) (ex : 70 -> 64, 2047 -> 1024)
 	//start_cycle_count();
+
 	int vmax_round = -1;
 	for (int i=14; vmax_round == -1; i--){
 		if ((vmax >> i) & 1){

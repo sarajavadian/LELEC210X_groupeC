@@ -1,8 +1,8 @@
 import numpy as np
 import matplotlib.pyplot as plt
 
-f = open("Assistant_implementation.txt", "r")
-g = open("Test_no_sqrt_+3.txt", "r")
+f = open("Our_implementation.txt", "r")
+g = open("Assistant_implementation.txt", "r")
 
 textf = f.readlines()
 textg = g.readlines()

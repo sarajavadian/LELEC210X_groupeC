@@ -25,7 +25,6 @@ q15_t mult_buf[  SAMPLES_PER_MELVEC/2]; // Intermediate buffer for arm_mat_mult_
 q15_t melvectors_before [N_MELVECS][MELVEC_LENGTH];
 q15_t melvectors_after [N_MELVECS][MELVEC_LENGTH];
 
-static uint32_t packet_cnt;
 uint8_t packet[PACKET_LENGTH];
 
 /**
@@ -156,6 +155,7 @@ void eval_spectrogram(void)
 	}
 
 #if (DEBUGP == 1)
+static uint32_t packet_cnt;
 #if (FIRST)
 	DEBUG_PRINT("FVs of the first spectrogram\r\n");
 	for(unsigned int j=0; j < N_MELVECS; j++) {
