@@ -92,7 +92,7 @@ HAL_StatusTypeDef S2LP_Send(uint8_t *payload, uint16_t pay_len)
 	HAL_StatusTypeDef err;
 
 	// Flush the Tx FIFO
-//	S2LP_Command(CMD_FLUSHTXFIFO, &radio_status); // useless because the FIFO is not saved when in sleep mode
+	S2LP_Command(CMD_FLUSHTXFIFO, &radio_status); // useless because the FIFO is not saved when in sleep mode
 	if (radio_status.MC_STATE != MC_STATE_READY) {
 		DEBUG_PRINT("[S2LP] Error: radio is not ready\r\n");
 		return HAL_BUSY;
@@ -500,7 +500,7 @@ HAL_StatusTypeDef S2LP_Init(SPI_HandleTypeDef *spi_handle)
 		DEBUG_PRINT("[S2LP] Error: radio is not ready after initialization\r\n");
 		return HAL_ERROR;
 	}
-
+	S2LP_Sleep();
 	return HAL_OK;
 }
 
