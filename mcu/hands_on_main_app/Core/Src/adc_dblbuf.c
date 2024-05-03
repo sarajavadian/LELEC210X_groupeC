@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "s2lp.h"
 #include "packet.h"
+#include "my_arm_var.h"
 
 
 static volatile uint16_t ADCDoubleBuf[2*ADC_BUF_SIZE]; /* ADC group regular conversion data (array of data) */
@@ -86,57 +87,39 @@ static void send_spectrogram() {
 	S2LP_WakeUp();
 	S2LP_Send(packet, PACKET_LENGTH);
 	S2LP_Sleep();
-	print_encoded_packet(packet);
+//	print_encoded_packet(packet);
 }
 
 static void ADC_Callback(int buf_cplt) {
 
-//	if (rem_n_bufs == N_MELVECS){
-//		#if (DEBUGP == 1)
-//			DEBUG_PRINT("Buffer number %u", cur_melvec);
-//			for (uint16_t elem = 0; elem < ADC_BUF_SIZE; elem++){
-//				DEBUG_PRINT(" %u_", ADCData[buf_cplt][elem]);
-//			}
-//			DEBUG_PRINT("End buffer\r\n");
-//		#endif
+//	int16_t pSrc[ADC_BUF_SIZE];
+//	uint32_t blockSize = ADC_BUF_SIZE;
 
+	if(cur_melvec==0){
+		uint32_t blockSize = ADC_BUF_SIZE;
+		q15_t pResult = 0;
+//		uint32_t pIndex = 0;
+		my_arm_var((q15_t*) ADCData[buf_cplt], blockSize, &pResult); // 2.2k cycles
+		printf("Result of the var arm operation : %d\n", pResult);
+//		arm_mean_q15((q15_t*) ADCData[buf_cplt], blockSize, &pResult);
+//		printf("Result of the mean arm operation : %d\n", pResult);
 
-//		uint16_t pSrc[ADC_BUF_SIZE];
-//		memcpy(pSrc ,ADCData[buf_cplt], ADC_BUF_SIZE);
-//		uint32_t blockSize = ADC_BUF_SIZE;
-//		q15_t* pResult;
-//
-//		uint32_t blkCnt;                               /* Loop counter */
-//		uint32_t sum = 0;                                 /* Temporary result storage */
-//
-//		  /* Initialize blkCnt with number of samples */
-//		  blkCnt = blockSize;
-//
-//
-//		  while (blkCnt > 0U)
-//		  {
-//			/* C = (A[0] + A[1] + A[2] + ... + A[blockSize-1]) */
-//			sum += *pSrc;
-//			(*pSrc)++;
-//
-//			/* Decrement loop counter */
-//			blkCnt--;
-//		  }
-//
-//		  /* C = (A[0] + A[1] + A[2] + ... + A[blockSize-1]) / blockSize  */
-//		  /* Store result to destination */
-//		  *pResult = (uint32_t) (sum / (int32_t) blockSize);
-//
-//			/**
-//			  @} end of mean group
-//			 */
-//		  printf("%d\n", *pResult);
-//	}
+//		for (int i=0; i<ADC_BUF_SIZE; i++){
+//			printf("%d|", pSrc[i]);
+//		}
+
+//		StopADCAcq();
+
+		if (pResult>8000 || pResult<THRESHOLD){
+			return;
+		}
+	}
+
 //
 //#if (DEBUGP == 1)
-//	DEBUG_PRINT("Buffer number %u", cur_melvec);
+//	DEBUG_PRINT("Buffer number %d", cur_melvec);
 //	for (uint16_t elem = 0; elem < ADC_BUF_SIZE; elem++){
-//		DEBUG_PRINT(" %u_", ADCData[buf_cplt][elem]);
+//		DEBUG_PRINT(" %d_", ADCData[buf_cplt][elem]);
 //	}
 //	DEBUG_PRINT("End buffer\r\n");
 //#endif
