@@ -6,6 +6,7 @@ import argparse
 
 import matplotlib.pyplot as plt
 import numpy as np
+import time
 import serial
 from serial.tools import list_ports
 import pickle
@@ -22,10 +23,6 @@ N_MELVECS = 20
 
 MEMORY_SIZE = 5
 WEIGHT_MEMO = 0.5
-WEIGHT_M1 = 1
-WEIGHT_M2 = 0
-THRESH_SOUND = 46000    #45794
-THRESH_PROBA = 0
 classnames = ["birds", "chainsaw","fire","handsaw","helicopter"]
 
 
@@ -35,6 +32,7 @@ def parse_buffer(line):
     line = line.strip()
     if line.startswith(PRINT_PREFIX):
         return bytes.fromhex(line[(len(PRINT_PREFIX) + 16) : 1623])  # modified to not keep header and tag (only payload)
+        #return bytes.fromhex(line[len(PRINT_PREFIX) :])
     else:
         #print(line)
         return None
@@ -73,29 +71,11 @@ def add_in_memory(m, idx, vp) :
         m[-1] = vp
         return idx
     
-def Naive(memo) :
-    idx = np.where(memo == np.max(memo))
-    return classnames[idx[1][0]], memo[idx[0][0]][idx[1][0]]
 
-def Majority_voting(memo) :
-    counter_max = np.zeros(len(classnames))
-    for i in range(len(memo)):
-        idx = np.where(memo[i] == np.max(memo[i]))
-        counter_max[idx[0][0]] += 1
-    idx = np.where(counter_max == np.max(counter_max))
-    return classnames[idx[0][0]], counter_max[idx[0][0]] / np.sum(counter_max)
-    
 def Averaging_FV(memo) :
     av_prob = np.sum(memo, axis=0) / len(classnames)
     idx = np.where(av_prob == np.max(av_prob))
     return classnames[idx[0][0]], av_prob[idx[0][0]]
-
-def ML(memo) :
-    logs = np.log(memo)
-    loglikelihood = np.sum(logs,axis=0)
-    idx = np.where(loglikelihood == np.max(loglikelihood))
-    return classnames[idx[0][0]], loglikelihood[idx[0][0]]
-
 
 
 
@@ -108,19 +88,14 @@ if __name__ == "__main__":
     print("uart-reader launched...\n")
     
     # init des modèles
-    model1 = "data/models/demo3_rft.pickle"
+    model1 = "data/models/rft_final_dataset.pickle"
     with open(model1, "rb") as file:
         m1 = pickle.load(file)
         print("model 1 loaded")
-    model2 = "data/models/demo3_svm.pickle"
-    with open(model2, "rb") as file:
-        m2 = pickle.load(file)
-        print("model 2 loaded")
     
     # init memoire
     memory = np.zeros((MEMORY_SIZE,len(classnames)))
     idx_empty = 0
-    
     
     
     if args.port is None:
@@ -137,43 +112,30 @@ if __name__ == "__main__":
     else:
         input_stream = reader(port=args.port)
         msg_counter = 0
-       
+        
+        start = time.time()
         for melvec in input_stream:
+            end = time.time()
+            
             msg_counter += 1
             print(f"MEL Spectrogram #{msg_counter}")
-        
-            if np.linalg.norm(melvec) < THRESH_SOUND :
-                print("No sound -> no classification")
-                idx_empty = add_in_memory(memory, idx_empty, np.zeros((1,5)))
+            
+            if end-start > 3.0 :
+                print("- Memory reset -")
+                memory = np.zeros((MEMORY_SIZE,len(classnames)))
+                idx_empty = 0
     
-            else :
-                melvec_normalized = melvec / np.linalg.norm(melvec)
-                melvec_normalized = melvec_normalized.reshape((1, MELVEC_LENGTH*N_MELVECS))
-                
-                current_pred1 = m1.predict(melvec_normalized) # useless
-                current_prob1 = m1.predict_proba(melvec_normalized)
-                current_pred2 = m2.predict(melvec_normalized) # useless
-                current_prob2 = m2.predict_proba(melvec_normalized)
-                
-                # combined classifiers
-                combined_prob = WEIGHT_M1 * current_prob1[0] + WEIGHT_M2 * current_prob2[0]
-                if max(combined_prob) > 1.0 : # useless
-                    print("WARNING: got a combined probability higher than 1")
-                combined_pred = classnames[ np.argmax(combined_prob) ] # useless
-                
-                # memory
-                tot_prob = np.concatenate( ( WEIGHT_MEMO * memory, combined_prob.reshape((1,5)) ) )
-                prediction, proba = Averaging_FV(tot_prob)
-
-                idx_empty = add_in_memory(memory, idx_empty, combined_prob)
-                
-                            
-                ########### AFFICHAGE ##########
-                print(current_pred1[0]," -- ",current_pred2[0])
-                print("Result with combined classifiers:")
-                print(combined_pred)
-                print("Result with memory:")
-                print(prediction)
-                print()
-                
-                
+            melvec_normalized = melvec / np.linalg.norm(melvec)
+            melvec_normalized = melvec_normalized.reshape((1, MELVEC_LENGTH*N_MELVECS))
+            
+            current_prob1 = m1.predict_proba(melvec_normalized)
+            tot_prob = np.concatenate( ( WEIGHT_MEMO * memory, current_prob1[0].reshape((1,5)) ) )
+            prediction, proba = Averaging_FV(tot_prob)
+            idx_empty = add_in_memory(memory, idx_empty, current_prob1[0])
+            
+            print(prediction)
+            print()
+            
+            start = time.time()
+            
+            
