@@ -7,10 +7,12 @@
 
 // ADC parameters
 #define ADC_BUF_SIZE SAMPLES_PER_MELVEC
-
+#define THRESHOLD 500
 
 int StartADCAcq(int32_t n_bufs);
 int IsADCFinished(void);
+void encode_packet(uint8_t *packet, uint32_t* packet_cnt);
+void print_encoded_packet(uint8_t *packet);
 
 extern ADC_HandleTypeDef hadc1;
 

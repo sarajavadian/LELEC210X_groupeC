@@ -20,10 +20,10 @@ void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
 	// Allocate a buffer of the key size to store the result of AES
 	// uint32_t[4] is 4*(32/8)= 16 bytes long
 
-	uint8_t result[msg_len + 16];
+    size_t padd_len = msg_len % 16; // padd_len = 8
+    size_t tot_len = msg_len + 16 - padd_len; // tot_len = 816
 
-    size_t padd_len = msg_len % 16;
-    size_t tot_len = msg_len + 16 - padd_len;
+	uint8_t result[tot_len+16]; // tot_len + 16 = 832
 
     if (padd_len != 0){
     	uint8_t total_buff[tot_len];
@@ -38,8 +38,25 @@ void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
     	HAL_CRYPEx_AES(&hcryp, copy_buff, msg_len, result, 1000);
     }
     for (int j=0; j<16; j++){
-    	tag[j] = result[msg_len + j];
+    	tag[j] = 0; // 792->808 python prend de -40 à -24 soit 792 à 808
     }
+
+
+//    size_t size = msg_len+16-msg_len%16;
+//	uint8_t data[size];
+//	uint8_t result[size];
+//
+//	memcpy(data, msg, msg_len);
+//
+//	HAL_CRYP_AESCBC_Encrypt(&hcryp, data, size, result, 1000);
+//	// Copy the result of CBC-MAC-AES to the tag.
+//	for (int j = 0; j<16; j++){
+//		tag[j] =  result[msg_len+j-16];
+//	}
+//
+//    for (int k=0; k<size; k++){
+//    	printf("%d|", result[k]);
+//    }
 
 }
 

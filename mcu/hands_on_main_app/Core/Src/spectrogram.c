@@ -13,6 +13,7 @@
 #include "config.h"
 #include "utils.h"
 #include "arm_absmax_q15.h"
+#include "arm_cmplx_mag_fast_q15.h"
 
 q15_t buf    [  SAMPLES_PER_MELVEC  ]; // Windowed samples
 q15_t buf_fft[2*SAMPLES_PER_MELVEC  ]; // Double size (real|imag) buffer needed for arm_rfft_q15
@@ -21,7 +22,7 @@ q15_t buf_test    [  SAMPLES_PER_MELVEC  ]; // Windowed samples -> testing buffe
 q15_t buf_test_2    [  SAMPLES_PER_MELVEC  ]; // Windowed samples -> testing buffer
 
 // Convert 12-bit DC ADC samples to Q1.15 fixed point signal and remove DC component
-void Spectrogram_Format(q15_t *in)
+void Spectrogram_Format(q15_t *buf)
 {
 	// STEP 0.1 : Increase fixed-point scale
 	//            --> Pointwise shift
@@ -35,7 +36,7 @@ void Spectrogram_Format(q15_t *in)
 	// /!\ When multiplying/dividing by a power 2, always prefer shifting left/right instead, ARM instructions to do so are more efficient.
 	// Here we should shift left by 3.
 	//start_cycle_count();
-	arm_shift_q15(in, 3, buf, SAMPLES_PER_MELVEC);
+	arm_shift_q15(buf, 3, buf, SAMPLES_PER_MELVEC);
 	//stop_cycle_count("Fixed point scale");
 	// STEP 0.2 : Remove DC Component
 	//            --> Pointwise subtract
@@ -75,7 +76,9 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	//           Complexity: O(N)
 	//           Number of cycles: <TODO>
 	//start_cycle_count();
+
 	arm_mult_q15(samples, hamming_window, buf, SAMPLES_PER_MELVEC);
+
 	//stop_cycle_count("Windowing");
 
 	// STEP 2  : Discrete Fourier Transform
@@ -117,14 +120,15 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 
 	// code to get the highest power of 2 contained in vmax (to approximate vmax) (ex : 70 -> 64, 2047 -> 1024)
 	//start_cycle_count();
+
 	int vmax_round = -1;
 	for (int i=14; vmax_round == -1; i--){
 		if ((vmax >> i) & 1){
 			vmax_round = i;
 		}
 	}
-
-	arm_shift_q15(buf_fft, 15-vmax_round, buf, SAMPLES_PER_MELVEC); // There can be overflow so maybe -1 in the shift. But in that case, the approximation is way off.
+//
+	arm_shift_q15(buf_fft, 15-vmax_round-1, buf, SAMPLES_PER_MELVEC); // There can be overflow so maybe -1 in the shift. But in that case, the approximation is way off.
 	//stop_cycle_count("Normalize");
 
 //	------------------ TEST ------------------------
@@ -151,7 +155,57 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	//           Number of cycles: <TODO>
 	//start_cycle_count();
 
+//	memcpy(buf_test, buf, SAMPLES_PER_MELVEC);
+//	printf("---------------BEFORE---------------\n");
+//	for (int i=0; i<40;i++){
+//		printf("%d|", buf[i]);
+//	}
+//	printf("\n----------------------------------------\n");
+//	start_cycle_count();
 	arm_cmplx_mag_q15(buf, buf, SAMPLES_PER_MELVEC/2); // could completely change the function by making approximations. It could save some clock cycles
+//	stop_cycle_count("complex mag\n");
+//	printf("---------------AFTER---------------\n");
+////	for (int i=0; i<20; i++){
+////		printf("%d|", buf_test_2[i]);
+////	}
+////	printf("\n---------------END---------------\n");
+//	start_cycle_count();
+//	uint32_t blkCnt;                               /* Loop counter */
+//
+//	q15_t real, imag;                              /* Temporary input variables */
+//
+//	q15_t* pSrc = buf_test;
+//	q15_t* pDst = buf_test;
+//	/* Accumulators */
+//
+//  /* Initialize blkCnt with number of samples */
+//  blkCnt = SAMPLES_PER_MELVEC/2;
+//  while (blkCnt > 0U)
+//  {
+////	  printf("good value : %d\n", buf[i]);
+//	  real = *pSrc++;
+//	  imag = *pSrc++;
+//	  real = real > 0? real : (q15_t)__QSUB16(0, real);
+//	  imag = imag > 0? imag : (q15_t)__QSUB16(0, imag);
+////	  printf("real value : %d\n", real);
+////	  printf("imag value : %d\n", imag);
+//
+//	/* store result in 2.14 format in destination buffer. */
+//	*pDst = (q15_t)__QSUB16(real, imag) > 0 ? real + (imag>>2) : imag + (real>>2);
+////	printf("approx value : %d\n", *pDst);
+//	pDst++;
+////	i++;
+//	// other question to ask : if shift right, should we remove the sign bit before and add it after ?
+//	/* Decrement loop counter */
+//	blkCnt--;
+//  }
+//	stop_cycle_count("New complex mag");
+//	printf("---------------AFTER MY FUNCTION---------------\n");
+//	for (int i=0; i<20; i++){
+//		printf("%d|", buf_test[i]);
+//	}
+//	printf("\n---------------END---------------\n");
+
 	//stop_cycle_count("cmplx mag");
 
 	// STEP 3.4: Denormalize the vector
@@ -176,7 +230,7 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 //	printf("\n-------------------SCALE_UP-------------------\n");
 
 	//start_cycle_count();
-	arm_shift_q15(buf, vmax_round-15, buf, SAMPLES_PER_MELVEC/2);
+	arm_shift_q15(buf, vmax_round-15+1, buf, SAMPLES_PER_MELVEC/2);
 	//stop_cycle_count("Denormalize");
 
 	//stop_cycle_count("3.4");
@@ -194,13 +248,13 @@ void Spectrogram_Compute(q15_t *samples, q15_t *melvec)
 	// as a total of numColsA additions are computed internally for each output element. Because our hz2mel_mat matrix contains lots of zeros in its rows, this is not necessary.
 
 	//start_cycle_count();
-	//arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
-
-	//arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
-	//arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
-	//arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
-
-	//arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
+//	arm_matrix_instance_q15 hz2mel_inst, fftmag_inst, melvec_inst;
+//
+//	arm_mat_init_q15(&hz2mel_inst, MELVEC_LENGTH, SAMPLES_PER_MELVEC/2, hz2mel_mat); // MELVEC_LENGTH x SAMPLES_PER_MELVEC/2 = 20 x 256. This matrix is a band matrix
+//	arm_mat_init_q15(&fftmag_inst, SAMPLES_PER_MELVEC/2, 1, buf); // SAMPLES_PER_MELVEC/2 x 1 = 256 x 1  // requires 21k cycles -> matrix band implementation could save us some precious cycles.
+//	arm_mat_init_q15(&melvec_inst, MELVEC_LENGTH, 1, melvec); // result : MELVEC_LENGTH x 1 = 20 x 1
+//
+//	arm_mat_mult_fast_q15(&hz2mel_inst, &fftmag_inst, &melvec_inst, buf_tmp);
 	//stop_cycle_count("Leur_calcul");
 
 	///////////////////////// MULTIPLICATION IMPLEMENTATION /////////////////////////

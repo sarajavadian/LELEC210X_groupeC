@@ -6,6 +6,7 @@
 #include "utils.h"
 #include "s2lp.h"
 #include "packet.h"
+#include "my_arm_var.h"
 
 
 static volatile uint16_t ADCDoubleBuf[2*ADC_BUF_SIZE]; /* ADC group regular conversion data (array of data) */
@@ -17,12 +18,12 @@ static q15_t mel_vectors[N_MELVECS][MELVEC_LENGTH];
 
 static uint32_t packet_cnt = 0;
 
+q15_t* mean;
+
 static volatile int32_t rem_n_bufs = 0;
 
 int StartADCAcq(int32_t n_bufs) {
-	rem_n_bufs = n_bufs;
-	cur_melvec = 0;
-	if (rem_n_bufs != 0) {
+	if (1){
 		return HAL_ADC_Start_DMA(&hadc1, (uint32_t *)ADCDoubleBuf, 2*ADC_BUF_SIZE);
 	} else {
 		return HAL_OK;
@@ -30,29 +31,29 @@ int StartADCAcq(int32_t n_bufs) {
 }
 
 int IsADCFinished(void) {
-	return (rem_n_bufs == 0);
+	return 0;
 }
 
-static void StopADCAcq() {
-	HAL_ADC_Stop_DMA(&hadc1);
-}
+//static void StopADCAcq() {
+//	HAL_ADC_Stop_DMA(&hadc1);
+//}
 
-static void print_spectrogram(void) {
-#if (DEBUGP == 1)
-	//start_cycle_count();
-	DEBUG_PRINT("Acquisition complete, sending the following FVs\r\n");
-	for(unsigned int j=0; j < N_MELVECS; j++) {
-		DEBUG_PRINT("FV #%u:\t", j+1);
-		for(unsigned int i=0; i < MELVEC_LENGTH; i++) {
-			DEBUG_PRINT(" %.2f, ", q15_to_float(mel_vectors[j][i]));
-		}
-		DEBUG_PRINT(" \r\n");
-	}
-	//stop_cycle_count("Print FV");
-#endif
-}
+//static void print_spectrogram(void) {
+//#if (DEBUGP == 1)
+//	//start_cycle_count();
+//	DEBUG_PRINT("Acquisition complete, sending the following FVs\r\n");
+//	for(unsigned int j=0; j < N_MELVECS; j++) {
+//		DEBUG_PRINT("FV #%u:\t", j+1);
+//		for(unsigned int i=0; i < MELVEC_LENGTH; i++) {
+//			DEBUG_PRINT(" %.2f, ", q15_to_float(mel_vectors[j][i]));
+//		}
+//		DEBUG_PRINT(" \r\n");
+//	}
+//	//stop_cycle_count("Print FV");
+//#endif
+//}
 
-static void print_encoded_packet(uint8_t *packet) {
+void print_encoded_packet(uint8_t *packet) {
 #if (DEBUGP == 1)
 	char hex_encoded_packet[2*PACKET_LENGTH+1];
 	hex_encode(hex_encoded_packet, packet, PACKET_LENGTH);
@@ -60,12 +61,12 @@ static void print_encoded_packet(uint8_t *packet) {
 #endif
 }
 
-static void encode_packet(uint8_t *packet, uint32_t* packet_cnt) {
+void encode_packet(uint8_t *packet, uint32_t* packet_cnt) {
 	// BE encoding of each mel coef
-	for (size_t i=0; i<N_MELVECS; i++) { // 20
+	for (size_t i=0; i<N_MELVECS; i++){
 		for (size_t j=0; j<MELVEC_LENGTH; j++) { // 20
-			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2]   = mel_vectors[i][j] >> 8;
-			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH+j)*2+1] = mel_vectors[i][j] & 0xFF;
+			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH + j)*2]   = mel_vectors[i][j] >> 8;
+			(packet+PACKET_HEADER_LENGTH)[(i*MELVEC_LENGTH + j)*2+1] = mel_vectors[i][j] & 0xFF;
 		}
 	}
 	// Write header and tag into the packet.
@@ -83,38 +84,54 @@ static void send_spectrogram() {
 
 	encode_packet(packet, &packet_cnt);
 
+	S2LP_WakeUp();
 	S2LP_Send(packet, PACKET_LENGTH);
-
-	print_encoded_packet(packet);
+	S2LP_Sleep();
+//	print_encoded_packet(packet);
 }
 
 static void ADC_Callback(int buf_cplt) {
-	if (rem_n_bufs != -1) {
-		rem_n_bufs--;
+
+//	int16_t pSrc[ADC_BUF_SIZE];
+//	uint32_t blockSize = ADC_BUF_SIZE;
+
+	if(cur_melvec==0){
+		uint32_t blockSize = ADC_BUF_SIZE;
+		q15_t pResult = 0;
+//		uint32_t pIndex = 0;
+		my_arm_var((q15_t*) ADCData[buf_cplt], blockSize, &pResult); // 2.2k cycles
+		printf("Result of the var arm operation : %d\n", pResult);
+//		arm_mean_q15((q15_t*) ADCData[buf_cplt], blockSize, &pResult);
+//		printf("Result of the mean arm operation : %d\n", pResult);
+
+//		for (int i=0; i<ADC_BUF_SIZE; i++){
+//			printf("%d|", pSrc[i]);
+//		}
+
+//		StopADCAcq();
+
+		if (pResult>8000 || pResult<THRESHOLD){
+			return;
+		}
 	}
-	if (rem_n_bufs == 0) {
-		StopADCAcq();
-	} else if (ADCDataRdy[1-buf_cplt]) {
-		DEBUG_PRINT("Error: ADC Data buffer full\r\n");
-		Error_Handler();
-	}
-#if (DEBUGP == 1)
-	DEBUG_PRINT("Buffer number %u", cur_melvec);
-	for (uint16_t elem = 0; elem < ADC_BUF_SIZE; elem++){
-		DEBUG_PRINT(" %u_", ADCData[buf_cplt][elem]);
-	}
-	DEBUG_PRINT("End buffer\r\n");
-#endif
+
+//
+//#if (DEBUGP == 1)
+//	DEBUG_PRINT("Buffer number %d", cur_melvec);
+//	for (uint16_t elem = 0; elem < ADC_BUF_SIZE; elem++){
+//		DEBUG_PRINT(" %d_", ADCData[buf_cplt][elem]);
+//	}
+//	DEBUG_PRINT("End buffer\r\n");
+//#endif
+
 	ADCDataRdy[buf_cplt] = 1;
-	//start_cycle_count();
 	Spectrogram_Format((q15_t *)ADCData[buf_cplt]);
 	Spectrogram_Compute((q15_t *)ADCData[buf_cplt], mel_vectors[cur_melvec]);
 	cur_melvec++;
-	//stop_cycle_count("spectrogram : total number of cycles");
+	cur_melvec %= N_MELVECS;
 	ADCDataRdy[buf_cplt] = 0;
-
-	if (rem_n_bufs == 0) {
-		print_spectrogram();
+//	print_spectrogram();
+	if (cur_melvec == N_MELVECS - 1){
 		send_spectrogram();
 	}
 }
