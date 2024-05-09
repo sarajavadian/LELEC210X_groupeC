@@ -16,31 +16,53 @@ const uint8_t AES_Key[16]  = {
 							0x00,0x00,0x00,0x00,
 							0x00,0x00,0x00,0x00};
 
+uint8_t msg_pad[PADDED_LENGTH] = {0};
+uint8_t result[PADDED_LENGTH];
+
 void tag_cbc_mac(uint8_t *tag, const uint8_t *msg, size_t msg_len) {
-	// Allocate a buffer of the key size to store the result of AES
-	// uint32_t[4] is 4*(32/8)= 16 bytes long
 
-	uint8_t result[msg_len + 16];
+// Allocate a buffer of the key size to store the result of AES
+// uint32_t[4] is 4*(32/8)= 16 bytes long
 
-    size_t padd_len = msg_len % 16;
-    size_t tot_len = msg_len + 16 - padd_len;
+//	memcpy(msg_pad, msg, PAYLOAD_LENGTH + PACKET_HEADER_LENGTH);
+	for (int k=0; k<PAYLOAD_LENGTH + PACKET_HEADER_LENGTH; k++){
+		msg_pad[k] = msg[k];
+	}
+	HAL_CRYP_AESCBC_Encrypt(&hcryp, msg_pad, PADDED_LENGTH, result, 1000);
 
-    if (padd_len != 0){
-    	uint8_t total_buff[tot_len];
-    	memset(total_buff, 0, tot_len*sizeof(uint8_t));
-    	memcpy(total_buff, msg, msg_len);
-    	HAL_CRYPEx_AES(&hcryp, total_buff, tot_len, result, 1000);
-    }
-    else{
-    	uint8_t copy_buff[msg_len];
-    	memset(copy_buff, 0, msg_len*sizeof(uint8_t));
-    	memcpy(copy_buff, msg, msg_len);
-    	HAL_CRYPEx_AES(&hcryp, copy_buff, msg_len, result, 1000);
-    }
     for (int j=0; j<16; j++){
-    	tag[j] = result[msg_len + j];
+    	tag[j] = result[PADDED_LENGTH - 16 + j];
     }
 
+    // uint32_t statew[4] = {0};
+	// // state is a pointer to the start of the buffer
+	// uint8_t *state = (uint8_t*) statew;
+	// size_t i;
+
+	// // TO DO : Complete the CBC-MAC_AES
+
+	// for (i = 0; i < msg_len-16; i +=16){
+	// 	for(size_t j = 0; j < 16; j++){
+	// 		*(state+j) = msg[i+j] ^ *(state+j);
+	// 	}
+	// 	AES128_encrypt(state, AES_Key);
+	// }
+	// for(size_t k = i; k < msg_len; k++){
+	// 	*(state+k-i) = msg[k] ^ *(state+k-i);
+	// }
+	// AES128_encrypt(state, AES_Key);
+	// printf("software\n");
+	// for (int j=0; j<16; j++){
+	// 	printf("%d |", state[j]);
+	// }
+
+
+//	printf("stm\n");
+//	for (int j=0; j<16; j++){
+////    	tag[j] = result[PADDED_LENGTH - 16 + j];
+//		tag[j] = 0;
+//		printf("%d |", tag[j]);
+//	}
 }
 
 // Assumes payload is already in place in the packet
@@ -90,7 +112,7 @@ int make_packet(uint8_t *packet, size_t payload_len, uint8_t sender_id, uint32_t
 	// For the tag field, you have to calculate the tag. The function call below is correct but
 	// tag_cbc_mac function, calculating the tag, is not implemented.
 	//start_cycle_count();
-    tag_cbc_mac(packet + payload_len + PACKET_HEADER_LENGTH, packet, payload_len + PACKET_HEADER_LENGTH);
+    tag_cbc_mac(packet + payload_len + PACKET_HEADER_LENGTH, packet,  payload_len + PACKET_HEADER_LENGTH);
     //stop_cycle_count("tag");
 
     return packet_len;
