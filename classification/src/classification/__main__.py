@@ -110,7 +110,7 @@ def main(
                     idx_empty = 0
 
                 melvec_normalized = melvec / np.linalg.norm(melvec)
-                melvec_normalized = melvec_normalized.reshape((1, MELVEC_LENGTH*N_MELVECS))
+                melvec_normalized = melvec_normalized.reshape((1, melvec_length*n_melvecs))
                 
                 current_prob1 = m1.predict_proba(melvec_normalized)
                 tot_prob = np.concatenate( ( WEIGHT_MEMO * memory, current_prob1[0].reshape((1,5)) ) )
