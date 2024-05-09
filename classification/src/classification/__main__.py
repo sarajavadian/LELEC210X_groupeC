@@ -85,10 +85,9 @@ def main(
     # init memoire
     memory = np.zeros((MEMORY_SIZE,len(classnames)))
     idx_empty = 0
-    print("before time")
+    
     start = time.time()
     for payload in _input:
-        print(payload)
         end = time.time()
         
         if PRINT_PREFIX in payload:
@@ -104,14 +103,14 @@ def main(
                 #melvecs = melvecs.reshape((1, melvec_length*n_melvecs))
                 #result = m.predict(melvecs)
                 #print(result)
-                print(end-start)
+                
                 if end-start > 3.0 :
                     print("- Memory reset -")
                     memory = np.zeros((MEMORY_SIZE,len(classnames)))
                     idx_empty = 0
 
                 melvec_normalized = melvec / np.linalg.norm(melvec)
-                melvec_normalized = melvec_normalized.reshape((1, melvec_length*n_melvecs))
+                melvec_normalized = melvec_normalized.reshape((1, MELVEC_LENGTH*N_MELVECS))
                 
                 current_prob1 = m1.predict_proba(melvec_normalized)
                 tot_prob = np.concatenate( ( WEIGHT_MEMO * memory, current_prob1[0].reshape((1,5)) ) )
@@ -125,7 +124,7 @@ def main(
                 #hostname = "http://localhost:5000"
                 key = "aqH27o66E8xz-IotBk11ZZo1ix7Vbs5H2pTXlSra"
                 guess = prediction
-                # response = requests.post(f"{hostname}/lelec210x/leaderboard/submit/{key}/{guess}", timeout=1)
+                response = requests.post(f"{hostname}/lelec210x/leaderboard/submit/{key}/{guess}", timeout=1)
                 
                 start = time.time()
 
